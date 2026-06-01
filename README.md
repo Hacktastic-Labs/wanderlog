@@ -1,56 +1,83 @@
-# Welcome to your Expo app 👋
+# WanderLog
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+WanderLog is a privacy-first personal location journal that helps users log visits, explore movement patterns, and revisit memories on a beautiful world map.
 
-## Get started
+This implementation ships a production-grade Version 1 centered on manual check-ins and full travel history, while preparing architecture for Version 2 background/automatic visit detection.
 
-1. Install dependencies
+## Stack
 
-   ```bash
-   npm install
-   ```
+- Expo SDK 56 + React Native + TypeScript
+- Expo Router
+- NativeWind
+- Zustand
+- TanStack Query
+- Supabase
+- React Native Maps
+- Expo Location + Expo Task Manager
+- React Native Reanimated
 
-2. Start the app
+## Features in this build
 
-   ```bash
-   npx expo start
-   ```
+- Supabase authentication (login, signup, forgot password)
+- Five-tab navigation: Home, Map, Timeline, Statistics, Profile
+- Manual check-ins with reverse geocoding and category inference
+- Foreground location tracking + background tracking architecture
+- Visit detection engine (radius + duration based)
+- Interactive map with markers, clustering, heat circles, filters
+- Timeline grouped by month and day with search
+- Rich statistics, streaks, category breakdowns, rankings
+- Profile privacy controls (pause tracking, background toggle, export, delete data)
+- Offline queue for pending check-ins and local state persistence
+- Life replay component architecture for chronological map playback
 
-In the output, you'll find options to open the app in a
+## Environment setup
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Copy `.env.example` to `.env`
+2. Fill values:
 
 ```bash
-npm run reset-project
+EXPO_PUBLIC_SUPABASE_URL=...
+EXPO_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Database setup
 
-### Other setup steps
+Run the SQL in `supabase/schema.sql` using Supabase SQL Editor.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+This creates:
 
-## Learn more
+- `users`
+- `visits`
+- `location_points`
+- RLS policies so users can only access their own data
+- Trigger to auto-create profile rows for new auth users
 
-To learn more about developing your project with Expo, look at the following resources:
+## Run locally
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+npm run android
+```
 
-## Join the community
+For background location testing, use a development build and not Expo Go.
 
-Join our community of developers creating universal apps.
+## Scalable folder structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```text
+src/
+   app/
+      (auth)/
+      (tabs)/
+   components/wanderlog/
+   constants/
+   hooks/
+   lib/
+   services/
+      api/
+      location/
+   stores/
+   types/
+   utils/
+supabase/
+   schema.sql
+```
