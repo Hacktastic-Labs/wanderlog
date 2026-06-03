@@ -1,4 +1,3 @@
-import '@/global.css';
 import '@/services/location/location-task.registry';
 
 import { QueryClientProvider } from '@tanstack/react-query';

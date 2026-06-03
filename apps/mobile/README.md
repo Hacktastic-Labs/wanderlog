@@ -8,7 +8,6 @@ This implementation ships a production-grade Version 1 centered on manual check-
 
 - Expo SDK 56 + React Native + TypeScript
 - Expo Router
-- NativeWind
 - Zustand
 - TanStack Query
 - Supabase

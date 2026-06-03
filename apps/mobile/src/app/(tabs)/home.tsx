@@ -40,8 +40,8 @@ export default function HomeScreen() {
         <Text style={styles.welcome}>{`${greeting()}, ${profile?.name ?? 'Explorer'}`}</Text>
         <Text style={styles.subtitle}>Your life map is private, searchable, and always yours.</Text>
 
-        <View className="mt-2 self-start rounded-full bg-cyan-600/30 px-3 py-1">
-          <Text style={styles.badge}>NativeWind Ready</Text>
+        <View style={styles.badgePill}>
+          <Text style={styles.badge}>Private timeline</Text>
         </View>
 
         <View style={styles.buttonRow}>
@@ -113,6 +113,14 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#D9E2EC',
     fontSize: 14,
+  },
+  badgePill: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: 'rgba(8, 145, 178, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   badge: {
     color: '#D1FAE5',
