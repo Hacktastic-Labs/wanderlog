@@ -22,7 +22,7 @@ export default function LoginScreen() {
   const session = useAuthStore((state) => state.session);
   const signIn = useAuthStore((state) => state.signIn);
 
-  if (session?.user) {
+  if (session?.user.id) {
     return <Redirect href="/(tabs)/home" />;
   }
 

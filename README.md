@@ -51,7 +51,7 @@ Go service skeleton lives in [apps/api](./apps/api/). Run `go mod init` there wh
 
 ## Database
 
-Apply `supabase/schema.sql` in the Supabase SQL editor. Environment variables and app-specific setup are documented in [apps/mobile/README.md](./apps/mobile/README.md).
+`supabase/schema.sql` is the reference schema for the backend (Postgres/Supabase on the server). The mobile app stores data locally until `apps/api` is connected — no Supabase keys required in the client.
 
 ## License
 

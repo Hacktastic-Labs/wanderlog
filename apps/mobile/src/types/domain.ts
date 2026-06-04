@@ -20,6 +20,17 @@ export type UserProfile = {
   createdAt: string;
 };
 
+/** Client session shape (backend auth will populate this later). */
+export type AppSession = {
+  accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    createdAt: string;
+  };
+};
+
 export type Visit = {
   id: string;
   userId: string;

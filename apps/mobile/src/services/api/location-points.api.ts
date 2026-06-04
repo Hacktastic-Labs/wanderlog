@@ -1,60 +1,30 @@
-import { getSupabaseClient } from '@/lib/supabase';
+import { useVisitsStore } from '@/stores/visits.store';
 import type { LocationPoint } from '@/types/domain';
-
-const mapLocationPoint = (row: {
-  id: string;
-  user_id: string;
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
-}): LocationPoint => ({
-  id: row.id,
-  userId: row.user_id,
-  latitude: row.latitude,
-  longitude: row.longitude,
-  recordedAt: row.recorded_at,
-});
+import { createLocalId } from '@/utils/id';
 
 export const createLocationPoints = async (
   userId: string,
   points: { latitude: number; longitude: number; recordedAt: string }[],
 ) => {
-  const supabase = getSupabaseClient();
   if (!points.length) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('location_points')
-    .insert(
-      points.map((point) => ({
-        user_id: userId,
-        latitude: point.latitude,
-        longitude: point.longitude,
-        recorded_at: point.recordedAt,
-      })),
-    )
-    .select('*');
+  const mapped: LocationPoint[] = points.map((point) => ({
+    id: createLocalId('point'),
+    userId,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    recordedAt: point.recordedAt,
+  }));
 
-  if (error) {
-    throw error;
-  }
+  useVisitsStore.setState((state) => ({
+    locationPoints: [...mapped, ...state.locationPoints].slice(0, 5000),
+  }));
 
-  return data.map(mapLocationPoint);
+  return mapped;
 };
 
 export const getLocationPoints = async (userId: string) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('location_points')
-    .select('*')
-    .eq('user_id', userId)
-    .order('recorded_at', { ascending: false })
-    .limit(5000);
-
-  if (error) {
-    throw error;
-  }
-
-  return data.map(mapLocationPoint);
+  return useVisitsStore.getState().locationPoints.filter((point) => point.userId === userId);
 };

@@ -2,16 +2,16 @@ import * as Location from 'expo-location';
 
 import { createVisit } from '@/services/api/visits.api';
 import { reverseGeocodeCoordinates } from '@/services/location/reverse-geocode.service';
-import { useAuthStore } from '@/stores/auth.store';
+import { selectUserId, useAuthStore } from '@/stores/auth.store';
 import { useVisitsStore } from '@/stores/visits.store';
 import { nowIso } from '@/utils/date';
 
 export const useManualCheckIn = () => {
-  const session = useAuthStore((state) => state.session);
+  const userId = useAuthStore(selectUserId);
   const enqueueCheckIn = useVisitsStore((state) => state.enqueueCheckIn);
 
   const createManualCheckIn = async (durationMinutes = 30) => {
-    if (!session?.user.id) {
+    if (!userId) {
       throw new Error('Please sign in to log visits.');
     }
 
@@ -23,7 +23,7 @@ export const useManualCheckIn = () => {
     const timestamp = nowIso();
 
     const payload = {
-      userId: session.user.id,
+      userId,
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
       placeName: geocode.placeName,

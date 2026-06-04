@@ -23,7 +23,7 @@ export default function SignupScreen() {
   const session = useAuthStore((state) => state.session);
   const signUp = useAuthStore((state) => state.signUp);
 
-  if (session?.user) {
+  if (session?.user.id) {
     return <Redirect href="/(tabs)/home" />;
   }
 

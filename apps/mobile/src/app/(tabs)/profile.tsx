@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { GlassCard } from '@/components/wanderlog/glass-card';
 import { ScreenContainer } from '@/components/wanderlog/screen-container';
 import { useVisitsQuery } from '@/hooks/use-visits-query';
-import { getSupabaseClient } from '@/lib/supabase';
+import { AUTH_ENABLED } from '@/constants/features';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTrackingStore } from '@/stores/tracking.store';
 import { useVisitsStore } from '@/stores/visits.store';
@@ -42,15 +42,11 @@ export default function ProfileScreen() {
     Alert.alert('Export prepared', JSON.stringify(payload).slice(0, 500) + '...');
   };
 
-  const deleteAllData = async () => {
-    if (!profile?.id) {
-      return;
-    }
+  const clearLocalData = useVisitsStore((state) => state.clearLocalData);
 
-    const supabase = getSupabaseClient();
-    await supabase.from('location_points').delete().eq('user_id', profile.id);
-    await supabase.from('visits').delete().eq('user_id', profile.id);
-    Alert.alert('Data deleted', 'All location history has been removed.');
+  const deleteAllData = async () => {
+    clearLocalData();
+    Alert.alert('Data deleted', 'All local location history has been removed.');
   };
 
   return (
@@ -96,9 +92,11 @@ export default function ProfileScreen() {
         <Pressable style={[styles.button, styles.danger]} onPress={deleteAllData}>
           <Text style={styles.dangerLabel}>Delete All Data</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={signOut}>
-          <Text style={styles.buttonLabel}>Logout</Text>
-        </Pressable>
+        {AUTH_ENABLED ? (
+          <Pressable style={styles.button} onPress={signOut}>
+            <Text style={styles.buttonLabel}>Logout</Text>
+          </Pressable>
+        ) : null}
       </GlassCard>
     </ScreenContainer>
   );

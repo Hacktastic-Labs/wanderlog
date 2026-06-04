@@ -8,7 +8,7 @@ import { useVisitsQuery } from '@/hooks/use-visits-query';
 import { useVisitsStore } from '@/stores/visits.store';
 import { getDayKey, getMonthKey } from '@/utils/date';
 
-export default function TimelineScreen() {
+export function TimelineExplorePanel() {
   const [query, setQuery] = useState('');
 
   useVisitsQuery();
@@ -41,7 +41,6 @@ export default function TimelineScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Timeline</Text>
       <SearchInput value={query} onChangeText={setQuery} placeholder="Search place, city, country, category" />
 
       {grouped.map(([month, days]) => (
@@ -64,11 +63,6 @@ export default function TimelineScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#102A43',
-  },
   monthSection: {
     gap: 8,
   },

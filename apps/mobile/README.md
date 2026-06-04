@@ -7,49 +7,33 @@ This implementation ships a production-grade Version 1 centered on manual check-
 ## Stack
 
 - Expo SDK 56 + React Native + TypeScript
-- Expo Router
-- Zustand
+- Expo Router (native tabs)
+- Zustand + AsyncStorage (local persistence)
 - TanStack Query
-- Supabase
 - React Native Maps
 - Expo Location + Expo Task Manager
 - React Native Reanimated
 
 ## Features in this build
 
-- Supabase authentication (login, signup, forgot password)
-- Five-tab navigation: Home, Map, Timeline, Statistics, Profile
+- Three native tabs: Home, Explore (Map / Timeline / Stats), Profile
 - Manual check-ins with reverse geocoding and category inference
 - Foreground location tracking + background tracking architecture
 - Visit detection engine (radius + duration based)
 - Interactive map with markers, clustering, heat circles, filters
 - Timeline grouped by month and day with search
 - Rich statistics, streaks, category breakdowns, rankings
-- Profile privacy controls (pause tracking, background toggle, export, delete data)
+- Profile privacy controls (pause tracking, background toggle, export, delete local data)
 - Offline queue for pending check-ins and local state persistence
 - Life replay component architecture for chronological map playback
 
-## Environment setup
+## Data & auth (current)
 
-1. Copy `.env.example` to `.env`
-2. Fill values:
+The mobile app does **not** use Supabase. Visits and location points are stored locally via Zustand (`wanderlog-visits` in AsyncStorage). Database schema for the backend lives in the repo root at `supabase/schema.sql` (for `apps/api` when implemented).
 
-```bash
-EXPO_PUBLIC_SUPABASE_URL=...
-EXPO_PUBLIC_SUPABASE_ANON_KEY=...
-```
+Authentication is disabled by default (`AUTH_ENABLED = false` in `src/constants/features.ts`). The app opens directly to tabs with a local dev user. Set `AUTH_ENABLED` to `true` only after wiring `apps/api` auth in `src/services/api/auth.api.ts`.
 
-## Database setup
-
-Run the SQL in `supabase/schema.sql` using Supabase SQL Editor.
-
-This creates:
-
-- `users`
-- `visits`
-- `location_points`
-- RLS policies so users can only access their own data
-- Trigger to auto-create profile rows for new auth users
+No `.env` keys are required to run the app in local-only mode.
 
 ## Run locally
 
@@ -71,16 +55,16 @@ src/
    app/
       (auth)/
       (tabs)/
+         home.tsx
+         explore.tsx
+         profile.tsx
    components/wanderlog/
    constants/
    hooks/
-   lib/
    services/
       api/
       location/
    stores/
    types/
    utils/
-supabase/
-   schema.sql
 ```

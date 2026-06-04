@@ -8,7 +8,7 @@ import { useVisitsStore } from '@/stores/visits.store';
 import { formatDurationMinutes } from '@/utils/date';
 import { buildCategoryDistribution, computeConsecutiveDayStreak } from '@/utils/stats';
 
-export default function StatisticsScreen() {
+export function StatsExplorePanel() {
   useVisitsQuery();
   const visits = useVisitsStore((state) => state.visits);
 
@@ -39,8 +39,6 @@ export default function StatisticsScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Statistics</Text>
-
       <GlassCard>
         <Text style={styles.sectionTitle}>Overview</Text>
         <Text style={styles.metric}>Total visits: {visits.length}</Text>
@@ -88,11 +86,6 @@ export default function StatisticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#102A43',
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',

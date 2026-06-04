@@ -1,56 +1,24 @@
-import type { Session } from '@supabase/supabase-js';
+import type { AppSession } from '@/types/domain';
 
-import { getSupabaseClient } from '@/lib/supabase';
+const notConfigured = () =>
+  new Error('Server auth is not wired yet. Keep AUTH_ENABLED false or connect apps/api.');
 
-export const getSession = async (): Promise<Session | null> => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
-  }
-  return data.session;
+export const getSession = async (): Promise<AppSession | null> => {
+  throw notConfigured();
 };
 
-export const signIn = async (email: string, password: string) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    throw error;
-  }
-  return data.session;
+export const signIn = async (_email: string, _password: string) => {
+  throw notConfigured();
 };
 
-export const signUp = async (name: string, email: string, password: string) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-      },
-    },
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return data.user;
+export const signUp = async (_name: string, _email: string, _password: string) => {
+  throw notConfigured();
 };
 
-export const sendPasswordReset = async (email: string) => {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
-  if (error) {
-    throw error;
-  }
+export const sendPasswordReset = async (_email: string) => {
+  throw notConfigured();
 };
 
 export const signOut = async () => {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    throw error;
-  }
+  throw notConfigured();
 };

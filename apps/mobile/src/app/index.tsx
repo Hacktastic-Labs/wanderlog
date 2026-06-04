@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+import { AUTH_ENABLED } from '@/constants/features';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function IndexRoute() {
@@ -15,7 +16,7 @@ export default function IndexRoute() {
     );
   }
 
-  if (session?.user) {
+  if (!AUTH_ENABLED || session?.user.id) {
     return <Redirect href="/(tabs)/home" />;
   }
 

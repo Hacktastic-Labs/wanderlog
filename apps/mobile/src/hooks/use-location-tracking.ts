@@ -12,14 +12,14 @@ import {
 } from '@/services/location/location-permission.service';
 import { reverseGeocodeCoordinates } from '@/services/location/reverse-geocode.service';
 import { VisitDetectorService } from '@/services/location/visit-detector.service';
-import { useAuthStore } from '@/stores/auth.store';
+import { selectUserId, useAuthStore } from '@/stores/auth.store';
 import { useTrackingStore } from '@/stores/tracking.store';
 import { useVisitsStore } from '@/stores/visits.store';
 
 const detector = new VisitDetectorService();
 
 export const useLocationTracking = () => {
-  const session = useAuthStore((state) => state.session);
+  const userId = useAuthStore(selectUserId);
   const setForegroundPermission = useTrackingStore((state) => state.setForegroundPermission);
   const setBackgroundPermission = useTrackingStore((state) => state.setBackgroundPermission);
   const setForegroundTrackingActive = useTrackingStore((state) => state.setForegroundTrackingActive);
@@ -48,7 +48,7 @@ export const useLocationTracking = () => {
   }, [disableBackgroundTracking, setBackgroundPermission, setForegroundPermission]);
 
   const startTracking = useCallback(async () => {
-    if (!session?.user || pauseTracking) {
+    if (!userId || pauseTracking) {
       return;
     }
 
@@ -59,11 +59,11 @@ export const useLocationTracking = () => {
     }
 
     await startForegroundTracking(async (point) => {
-      if (!session.user.id) {
+      if (!userId) {
         return;
       }
 
-      await createLocationPoints(session.user.id, [
+      await createLocationPoints(userId, [
         {
           latitude: point.latitude,
           longitude: point.longitude,
@@ -76,7 +76,7 @@ export const useLocationTracking = () => {
         latitude: point.latitude,
         longitude: point.longitude,
         timestamp: point.timestamp,
-        userId: session.user.id,
+        userId,
         placeName: geocode.placeName,
         address: geocode.address,
         city: geocode.city,
@@ -98,7 +98,7 @@ export const useLocationTracking = () => {
     if (backgroundGranted && !disableBackgroundTracking) {
       await startBackgroundTracking();
     }
-  }, [askPermissions, disableBackgroundTracking, enqueueCheckIn, pauseTracking, session, setForegroundTrackingActive]);
+  }, [askPermissions, disableBackgroundTracking, enqueueCheckIn, pauseTracking, userId, setForegroundTrackingActive]);
 
   const stopTracking = useCallback(async () => {
     stopForegroundTracking();

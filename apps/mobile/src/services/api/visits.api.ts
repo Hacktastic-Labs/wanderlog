@@ -1,102 +1,56 @@
-import { getSupabaseClient } from '@/lib/supabase';
+import { useVisitsStore } from '@/stores/visits.store';
 import type { PlaceAggregate, Visit, VisitDraft, VisitFilters } from '@/types/domain';
+import { createLocalId } from '@/utils/id';
 
-const mapVisit = (row: {
-  id: string;
-  user_id: string;
-  latitude: number;
-  longitude: number;
-  place_name: string;
-  address: string | null;
-  category: string;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  arrived_at: string;
-  departed_at: string;
-  duration_minutes: number;
-  created_at: string;
-}): Visit => ({
-  id: row.id,
-  userId: row.user_id,
-  latitude: row.latitude,
-  longitude: row.longitude,
-  placeName: row.place_name,
-  address: row.address,
-  category: row.category as Visit['category'],
-  city: row.city,
-  state: row.state,
-  country: row.country,
-  arrivedAt: row.arrived_at,
-  departedAt: row.departed_at,
-  durationMinutes: row.duration_minutes,
-  createdAt: row.created_at,
-});
-
-export const createVisit = async (draft: VisitDraft) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('visits')
-    .insert({
-      user_id: draft.userId,
-      latitude: draft.latitude,
-      longitude: draft.longitude,
-      place_name: draft.placeName,
-      address: draft.address,
-      category: draft.category,
-      city: draft.city,
-      state: draft.state,
-      country: draft.country,
-      arrived_at: draft.arrivedAt,
-      departed_at: draft.departedAt,
-      duration_minutes: draft.durationMinutes,
-    })
-    .select('*')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return mapVisit(data);
-};
-
-export const getVisits = async (userId: string, filters?: VisitFilters) => {
-  const supabase = getSupabaseClient();
-  let query = supabase.from('visits').select('*').eq('user_id', userId).order('arrived_at', { ascending: false });
+const applyVisitFilters = (visits: Visit[], filters?: VisitFilters) => {
+  let result = [...visits];
 
   if (filters?.category && filters.category !== 'all') {
-    query = query.eq('category', filters.category);
+    result = result.filter((visit) => visit.category === filters.category);
   }
   if (filters?.city) {
-    query = query.ilike('city', `%${filters.city}%`);
+    result = result.filter((visit) => (visit.city ?? '').toLowerCase().includes(filters.city!.toLowerCase()));
   }
   if (filters?.country) {
-    query = query.ilike('country', `%${filters.country}%`);
+    result = result.filter((visit) =>
+      (visit.country ?? '').toLowerCase().includes(filters.country!.toLowerCase()),
+    );
   }
   if (filters?.startDate) {
-    query = query.gte('arrived_at', filters.startDate);
+    result = result.filter((visit) => visit.arrivedAt >= filters.startDate!);
   }
   if (filters?.endDate) {
-    query = query.lte('arrived_at', filters.endDate);
+    result = result.filter((visit) => visit.arrivedAt <= filters.endDate!);
   }
-
-  const { data, error } = await query;
-  if (error) {
-    throw error;
-  }
-
-  let visits = data.map(mapVisit);
   if (filters?.query) {
     const lower = filters.query.toLowerCase();
-    visits = visits.filter((visit) =>
+    result = result.filter((visit) =>
       [visit.placeName, visit.city, visit.country, visit.category].some((value) =>
         (value ?? '').toLowerCase().includes(lower),
       ),
     );
   }
 
-  return visits;
+  return result.sort((a, b) => new Date(b.arrivedAt).getTime() - new Date(a.arrivedAt).getTime());
+};
+
+export const createVisit = async (draft: VisitDraft) => {
+  const visit: Visit = {
+    id: createLocalId('visit'),
+    createdAt: new Date().toISOString(),
+    ...draft,
+  };
+
+  useVisitsStore.setState((state) => ({
+    visits: [visit, ...state.visits],
+  }));
+
+  return visit;
+};
+
+export const getVisits = async (userId: string, filters?: VisitFilters) => {
+  const visits = useVisitsStore.getState().visits.filter((visit) => visit.userId === userId);
+  return applyVisitFilters(visits, filters);
 };
 
 export const getPlaceAggregates = (visits: Visit[]): PlaceAggregate[] => {

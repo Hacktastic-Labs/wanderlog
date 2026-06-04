@@ -16,6 +16,7 @@ type VisitsState = {
   enqueueCheckIn: (draft: VisitDraft) => void;
   removePendingCheckIn: (index: number) => void;
   clearPendingCheckIns: () => void;
+  clearLocalData: () => void;
 };
 
 export const useVisitsStore = create<VisitsState>()(
@@ -38,6 +39,12 @@ export const useVisitsStore = create<VisitsState>()(
           pendingCheckIns: state.pendingCheckIns.filter((_, currentIndex) => currentIndex !== index),
         })),
       clearPendingCheckIns: () => set({ pendingCheckIns: [] }),
+      clearLocalData: () =>
+        set({
+          visits: [],
+          locationPoints: [],
+          pendingCheckIns: [],
+        }),
     }),
     {
       name: 'wanderlog-visits',

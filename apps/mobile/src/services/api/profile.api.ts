@@ -1,33 +1,16 @@
-import { getSupabaseClient } from '@/lib/supabase';
+import { DEV_USER_PROFILE } from '@/constants/features';
+import { useAuthStore } from '@/stores/auth.store';
 import type { UserProfile } from '@/types/domain';
 
-const mapProfile = (row: {
-  id: string;
-  email: string;
-  name: string;
-  avatar_url: string | null;
-  created_at: string;
-}): UserProfile => ({
-  id: row.id,
-  email: row.email,
-  name: row.name,
-  avatarUrl: row.avatar_url,
-  createdAt: row.created_at,
-});
-
 export const fetchProfile = async (userId: string) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    throw error;
+  const profile = useAuthStore.getState().profile;
+  if (profile?.id === userId) {
+    return profile;
   }
-
-  return mapProfile(data);
+  if (userId === DEV_USER_PROFILE.id) {
+    return DEV_USER_PROFILE;
+  }
+  throw new Error('Profile not found');
 };
 
 export const upsertProfile = async (payload: {
@@ -36,45 +19,24 @@ export const upsertProfile = async (payload: {
   name: string;
   avatarUrl?: string | null;
 }) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('users')
-    .upsert(
-      {
-        id: payload.id,
-        email: payload.email,
-        name: payload.name,
-        avatar_url: payload.avatarUrl ?? null,
-      },
-      {
-        onConflict: 'id',
-      },
-    )
-    .select('*')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return mapProfile(data);
+  const profile: UserProfile = {
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    avatarUrl: payload.avatarUrl ?? null,
+    createdAt: new Date().toISOString(),
+  };
+  useAuthStore.getState().setProfile(profile);
+  return profile;
 };
 
 export const updateProfile = async (userId: string, patch: { name?: string; avatarUrl?: string }) => {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      name: patch.name,
-      avatar_url: patch.avatarUrl,
-    })
-    .eq('id', userId)
-    .select('*')
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return mapProfile(data);
+  const current = await fetchProfile(userId);
+  const profile: UserProfile = {
+    ...current,
+    name: patch.name ?? current.name,
+    avatarUrl: patch.avatarUrl ?? current.avatarUrl,
+  };
+  useAuthStore.getState().setProfile(profile);
+  return profile;
 };

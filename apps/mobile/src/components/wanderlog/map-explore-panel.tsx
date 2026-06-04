@@ -15,7 +15,7 @@ import { getMapRegionDelta } from '@/utils/geo';
 const DATE_FILTERS = ['7d', '30d', 'all'] as const;
 const APP_BOOT_TIME_MS = new Date().getTime();
 
-export default function MapScreen() {
+export function MapExplorePanel() {
   const visits = useVisitsStore((state) => state.visits);
   const setFilters = useVisitsStore((state) => state.setFilters);
 
@@ -65,7 +65,6 @@ export default function MapScreen() {
   return (
     <ScreenContainer scroll={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Map</Text>
         <View style={styles.filterRow}>
           {DATE_FILTERS.map((filter) => (
             <Pressable
@@ -137,13 +136,6 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   header: {
     gap: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#102A43',
-    paddingHorizontal: 16,
-    paddingTop: 8,
   },
   filterRow: {
     flexDirection: 'row',
