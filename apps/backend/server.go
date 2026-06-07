@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/Hacktastic-Labs/wanderlog/internal/config"
+	"github.com/Hacktastic-Labs/wanderlog/internal/database"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
@@ -19,6 +20,9 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("config loaded", "config", cfg.LogValue())
+
+	dbConn := database.Connect(cfg.Database.DbURL, logger)
+	defer dbConn.Close()
 
 	e := echo.New()
 	e.Use(middleware.RequestLogger())
