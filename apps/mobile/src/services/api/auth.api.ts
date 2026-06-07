@@ -1,7 +1,7 @@
 import type { AppSession } from '@/types/domain';
 
 const notConfigured = () =>
-  new Error('Server auth is not wired yet. Keep AUTH_ENABLED false or connect apps/api.');
+  new Error('Server auth is not wired yet. Keep AUTH_ENABLED false or connect apps/backend.');
 
 export const getSession = async (): Promise<AppSession | null> => {
   throw notConfigured();

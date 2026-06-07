@@ -1,10 +1,10 @@
-# WanderLog API
+# WanderLog Backend
 
 Go HTTP API for WanderLog. Initialize the module from this directory:
 
 ```bash
-cd apps/api
-go mod init github.com/<your-org>/wanderlog/apps/api
+cd apps/backend
+go mod init github.com/<your-org>/wanderlog/apps/backend
 ```
 
 Suggested next steps:
@@ -17,7 +17,7 @@ go run ./cmd/server
 ## Layout
 
 ```text
-apps/api/
+apps/backend/
 ├── cmd/server/          # main, wiring
 ├── internal/
 │   ├── config/        # env, settings

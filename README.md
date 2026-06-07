@@ -10,7 +10,7 @@ This repository is a **pnpm monorepo**. The Expo mobile app lives under `apps/mo
 wanderlog/
 ├── apps/
 │   ├── mobile/          # Expo SDK 56 app (@wanderlog/mobile)
-│   └── api/             # Go HTTP API (initialize with go mod init)
+│   └── backend/         # Go HTTP API (initialize with go mod init)
 ├── supabase/
 │   └── schema.sql
 ├── package.json         # workspace root
@@ -47,11 +47,11 @@ You can also run commands from `apps/mobile` with `pnpm start`, etc.
 
 ## Backend API
 
-Go service skeleton lives in [apps/api](./apps/api/). Run `go mod init` there when you are ready — see [apps/api/README.md](./apps/api/README.md).
+Go service skeleton lives in [apps/backend](./apps/backend/). Run `go mod init` there when you are ready — see [apps/backend/README.md](./apps/backend/README.md).
 
 ## Database
 
-`supabase/schema.sql` is the reference schema for the backend (Postgres/Supabase on the server). The mobile app stores data locally until `apps/api` is connected — no Supabase keys required in the client.
+`supabase/schema.sql` is the reference schema for the backend (Postgres/Supabase on the server). The mobile app stores data locally until `apps/backend` is connected — no Supabase keys required in the client.
 
 ## License
 

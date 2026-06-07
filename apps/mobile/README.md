@@ -29,9 +29,9 @@ This implementation ships a production-grade Version 1 centered on manual check-
 
 ## Data & auth (current)
 
-The mobile app does **not** use Supabase. Visits and location points are stored locally via Zustand (`wanderlog-visits` in AsyncStorage). Database schema for the backend lives in the repo root at `supabase/schema.sql` (for `apps/api` when implemented).
+The mobile app does **not** use Supabase. Visits and location points are stored locally via Zustand (`wanderlog-visits` in AsyncStorage). Database schema for the backend lives in the repo root at `supabase/schema.sql` (for `apps/backend` when implemented).
 
-Authentication is disabled by default (`AUTH_ENABLED = false` in `src/constants/features.ts`). The app opens directly to tabs with a local dev user. Set `AUTH_ENABLED` to `true` only after wiring `apps/api` auth in `src/services/api/auth.api.ts`.
+Authentication is disabled by default (`AUTH_ENABLED = false` in `src/constants/features.ts`). The app opens directly to tabs with a local dev user. Set `AUTH_ENABLED` to `true` only after wiring `apps/backend` auth in `src/services/api/auth.api.ts`.
 
 No `.env` keys are required to run the app in local-only mode.
 
