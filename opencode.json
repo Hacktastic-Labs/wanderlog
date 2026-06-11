@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "http-framework" :{
+        "repository": "https://github.com/labstack/echo",
+      "branch": "master",
+      "description": "Echo is a HTTP framework for Go"
+    },
+    "database-framework" :{
+        "repository": "https://github.com/uptrace/bun",
+        "branch": "master",
+        "description": "Bun is a database framework for Go"
+    },
+    "authentication-framework" :{
+        "repository": "https://github.com/supabase-community/auth-go",
+        "branch": "main",
+        "description": "Supabase is a authentication framework for Go"
+    }
+  }
+}

@@ -6,10 +6,12 @@
   },
   "java.compile.nullAnalysis.mode": "disabled",
   "cSpell.words": [
+    "Hacktastic",
     "koanf",
     "pgdialect",
     "pgdriver",
     "sqldb",
-    "uptrace"
+    "uptrace",
+    "wanderlog"
   ]
 }
