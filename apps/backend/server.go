@@ -35,7 +35,7 @@ func main() {
 
 	supabaseClient := auth.NewSupabaseClient(&cfg.Supabase)
 	usersRepository := users.NewRepository(dbConn)
-	authService := auth.NewAuthService(supabaseClient, *usersRepository)
+	authService := auth.NewAuthService(supabaseClient, usersRepository)
 	authHandler := auth.NewAuthHandler(authService)
 
 	// i was calling the handler here using SignUpPassHandler(c) which was a error, but echo injects the context into the handler automatically

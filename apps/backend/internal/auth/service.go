@@ -10,10 +10,10 @@ import (
 
 type AuthService struct {
 	supabaseClient  supabaseAuth.Client
-	usersRepository users.Repository
+	usersRepository *users.Repository
 }
 
-func NewAuthService(supabaseClient *supabaseAuth.Client, usersRepository users.Repository) *AuthService {
+func NewAuthService(supabaseClient *supabaseAuth.Client, usersRepository *users.Repository) *AuthService {
 	return &AuthService{supabaseClient: *supabaseClient, usersRepository: usersRepository}
 }
 
