@@ -6,3 +6,8 @@ type UserSignUpRequest struct {
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 }
+
+type UserSignInRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
