@@ -32,17 +32,14 @@ func main() {
 	e.GET("/", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
+
 	supabaseClient := auth.NewSupabaseClient(&cfg.Supabase)
 	usersRepository := users.NewRepository(dbConn)
 	authService := auth.NewAuthService(supabaseClient, *usersRepository)
 	authHandler := auth.NewAuthHandler(authService)
-	// e.POST("/auth/signup", func(c *echo.Context) error {
-	// 	return auth.SignUpPassHandler(c, authService)
-	// })
 
-	// i was calling the handler here using SignUpPassHandler(c), but echo injects the context into the handler automatically
-
-	e.POST("/auth/signup", authHandler.SignUpPassHandler)
+	// i was calling the handler here using SignUpPassHandler(c) which was a error, but echo injects the context into the handler automatically
+	authHandler.RegisterRoutes(e)
 
 	if err := e.Start(":1323"); err != nil {
 		e.Logger.Error("failed to start server", "error", err)
