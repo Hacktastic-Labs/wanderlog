@@ -48,7 +48,7 @@ if (!TaskManager.isTaskDefined(BACKGROUND_LOCATION_TASK)) {
 }
 
 if (!TaskManager.isTaskDefined(GEOFENCE_TASK)) {
-  TaskManager.defineTask(GEOFENCE_TASK, ({ data, error }) => {
+  TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
     if (error || !data) {
       return;
     }

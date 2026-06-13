@@ -7,11 +7,12 @@ import { useAuthStore } from '@/stores/auth.store';
 
 const tabScreenOptions = {
   headerShown: false,
-  tabBarActiveTintColor: '#0E7490',
-  tabBarInactiveTintColor: '#829AB1',
+  tabBarShowLabel: false,
+  tabBarActiveTintColor: '#ffffff',
+  tabBarInactiveTintColor: '#8e8e93',
   tabBarStyle: {
-    backgroundColor: '#FFFFFF',
-    borderTopColor: '#D9E2EC',
+    backgroundColor: '#000000',
+    borderTopColor: '#333333',
   },
 } as const;
 
@@ -25,36 +26,34 @@ export default function TabsLayout() {
   if (Platform.OS === 'web') {
     return (
       <Tabs screenOptions={tabScreenOptions}>
-        <Tabs.Screen name="home" options={{ title: 'Home' }} />
-        <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="home" options={{ title: '' }} />
+        <Tabs.Screen name="explore" options={{ title: '' }} />
+        <Tabs.Screen name="profile" options={{ title: '' }} />
       </Tabs>
     );
   }
 
   return (
     <NativeTabs
-      tintColor="#0E7490"
-      labelStyle={{
-        default: { color: '#829AB1' },
-        selected: { color: '#0E7490' },
-      }}>
+      tintColor="#ffffff"
+      backgroundColor="#000000"
+      indicatorColor="#333333">
       <NativeTabs.Trigger name="home">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+        <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'map', selected: 'map.fill' }} md="explore" />
+        <NativeTabs.Trigger.Label hidden>Explore</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.circle', selected: 'person.circle.fill' }}
           md="person"
         />
+        <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -1,0 +1,15 @@
+/**
+ * API configuration for the WanderLog backend.
+ *
+ * Set `EXPO_PUBLIC_API_URL` in your environment to point to the running
+ * backend server. Defaults to the standard local Go backend port.
+ */
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.71:1323';
+
+export const API_ENDPOINTS = {
+  auth: {
+    signIn: '/auth/signin',
+    signUp: '/auth/signup',
+  },
+} as const;

@@ -23,6 +23,7 @@ export type UserProfile = {
 /** Client session shape (backend auth will populate this later). */
 export type AppSession = {
   accessToken: string;
+  refreshToken?: string;
   user: {
     id: string;
     email: string;
@@ -56,38 +57,4 @@ export type LocationPoint = {
   recordedAt: string;
 };
 
-export type VisitDetectionConfig = {
-  radiusMeters: number;
-  minimumDurationMinutes: number;
-};
-
 export type VisitDraft = Omit<Visit, 'id' | 'createdAt'>;
-
-export type VisitFilters = {
-  query?: string;
-  category?: VisitCategory | 'all';
-  city?: string;
-  country?: string;
-  startDate?: string;
-  endDate?: string;
-};
-
-export type PlaceAggregate = {
-  key: string;
-  placeName: string;
-  category: VisitCategory;
-  latitude: number;
-  longitude: number;
-  city?: string | null;
-  country?: string | null;
-  visitCount: number;
-  totalMinutes: number;
-  lastVisitedAt: string;
-};
-
-export type LifeReplayFrame = {
-  timestamp: string;
-  latitude: number;
-  longitude: number;
-  placeName?: string;
-};

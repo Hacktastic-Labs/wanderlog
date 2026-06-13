@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AUTH_ENABLED } from '@/constants/features';
+import { AuthColors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function IndexRoute() {
@@ -10,8 +11,15 @@ export default function IndexRoute() {
 
   if (isBootstrapping) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF3F9' }}>
-        <ActivityIndicator size="large" color="#0E7490" />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: AuthColors.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={AuthColors.foreground} />
       </View>
     );
   }

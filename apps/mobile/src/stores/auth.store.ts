@@ -2,22 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import {
-  sendPasswordReset,
-  signIn as signInApi,
-  signOut as signOutApi,
-  signUp as signUpApi,
-} from '@/services/api/auth.api';
+import { sendPasswordReset, signOut as signOutApi } from '@/services/api/auth.api';
 import { AUTH_ENABLED, DEV_USER_ID, DEV_USER_PROFILE } from '@/constants/features';
 import type { AppSession, UserProfile } from '@/types/domain';
+import type { AppAuthSession } from '@/models/auth.model';
 
 type AuthState = {
   session: AppSession | null;
   profile: UserProfile | null;
   isBootstrapping: boolean;
   bootstrap: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (payload: { name: string; email: string; password: string }) => Promise<void>;
+  setSession: (session: AppAuthSession | null) => void;
   sendReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   setProfile: (profile: UserProfile | null) => void;
@@ -56,13 +51,26 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        set({ session: null, profile: null, isBootstrapping: false });
+        // When AUTH_ENABLED is true the persisted session is rehydrated by
+        // zustand. We just mark bootstrap complete here.
+        set({ isBootstrapping: false });
       },
-      signIn: async (email, password) => {
-        await signInApi(email, password);
-      },
-      signUp: async ({ name, email, password }) => {
-        await signUpApi(name, email, password);
+      setSession: (session) => {
+        if (!session) {
+          set({ session: null });
+          return;
+        }
+        const appSession: AppSession = {
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          user: {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.name,
+            createdAt: session.user.createdAt,
+          },
+        };
+        set({ session: appSession });
       },
       sendReset: async (email) => {
         await sendPasswordReset(email);
@@ -77,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'wanderlog-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
+        session: state.session,
         profile: state.profile,
       }),
     },
