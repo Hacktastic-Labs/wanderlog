@@ -2,6 +2,10 @@ import '@/services/location/location-task.registry';
 
 import { useEffect } from 'react';
 
+import {
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_600SemiBold,
+} from '@expo-google-fonts/bricolage-grotesque';
 import { ChelseaMarket_400Regular } from '@expo-google-fonts/chelsea-market';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -20,6 +24,8 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     ChelseaMarket: ChelseaMarket_400Regular,
+    BricolageGrotesque: BricolageGrotesque_400Regular,
+    BricolageGrotesqueSemiBold: BricolageGrotesque_600SemiBold,
   });
 
   useBootstrap();

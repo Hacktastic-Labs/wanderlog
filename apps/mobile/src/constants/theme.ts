@@ -35,6 +35,9 @@ export const Fonts = Platform.select({
     mono: 'ui-monospace',
     /** Custom display font loaded in `_layout.tsx` */
     display: 'ChelseaMarket',
+    /** Body font for descriptions and UI text */
+    body: 'BricolageGrotesque',
+    bodySemiBold: 'BricolageGrotesqueSemiBold',
   },
   default: {
     sans: 'normal',
@@ -42,6 +45,8 @@ export const Fonts = Platform.select({
     rounded: 'normal',
     mono: 'monospace',
     display: 'ChelseaMarket',
+    body: 'BricolageGrotesque',
+    bodySemiBold: 'BricolageGrotesqueSemiBold',
   },
   web: {
     sans: 'var(--font-display)',
@@ -49,6 +54,8 @@ export const Fonts = Platform.select({
     rounded: 'var(--font-rounded)',
     mono: 'var(--font-mono)',
     display: 'ChelseaMarket',
+    body: 'BricolageGrotesque',
+    bodySemiBold: 'BricolageGrotesqueSemiBold',
   },
 });
 
