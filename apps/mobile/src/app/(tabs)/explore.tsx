@@ -6,7 +6,7 @@ import { StatsExplorePanel } from '@/components/wanderlog/stats-explore-panel';
 import { TimelineExplorePanel } from '@/components/wanderlog/timeline-explore-panel';
 
 const SECTIONS = [
-  { id: 'map', label: 'Map' },
+  { id: 'places', label: 'Places' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'stats', label: 'Stats' },
 ] as const;
@@ -14,7 +14,7 @@ const SECTIONS = [
 type ExploreSection = (typeof SECTIONS)[number]['id'];
 
 export default function ExploreScreen() {
-  const [section, setSection] = useState<ExploreSection>('map');
+  const [section, setSection] = useState<ExploreSection>('places');
 
   return (
     <View style={styles.container}>
@@ -35,7 +35,7 @@ export default function ExploreScreen() {
       </View>
 
       <View style={styles.panel}>
-        {section === 'map' ? <MapExplorePanel /> : null}
+        {section === 'places' ? <MapExplorePanel /> : null}
         {section === 'timeline' ? <TimelineExplorePanel /> : null}
         {section === 'stats' ? <StatsExplorePanel /> : null}
       </View>

@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import MapView from 'react-native-map-clustering';
-import { Callout, Circle, Marker } from 'react-native-maps';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { LifeReplay } from '@/components/wanderlog/life-replay';
 import { ScreenContainer } from '@/components/wanderlog/screen-container';
@@ -10,7 +8,6 @@ import { useVisitsQuery } from '@/hooks/use-visits-query';
 import { getPlaceAggregates } from '@/services/api/visits.api';
 import { useVisitsStore } from '@/stores/visits.store';
 import { formatDateTime, formatDurationMinutes } from '@/utils/date';
-import { getMapRegionDelta } from '@/utils/geo';
 
 const DATE_FILTERS = ['7d', '30d', 'all'] as const;
 const APP_BOOT_TIME_MS = new Date().getTime();
@@ -45,23 +42,6 @@ export function MapExplorePanel() {
 
   const aggregates = useMemo(() => getPlaceAggregates(filteredVisits), [filteredVisits]);
 
-  const initialRegion = useMemo(() => {
-    const first = aggregates[0] ?? filteredVisits[0];
-    if (!first) {
-      return {
-        latitude: 20.5937,
-        longitude: 78.9629,
-        ...getMapRegionDelta(2),
-      };
-    }
-
-    return {
-      latitude: first.latitude,
-      longitude: first.longitude,
-      ...getMapRegionDelta(8),
-    };
-  }, [aggregates, filteredVisits]);
-
   return (
     <ScreenContainer scroll={false}>
       <View style={styles.header}>
@@ -91,44 +71,34 @@ export function MapExplorePanel() {
         </View>
       </View>
 
-      <View style={styles.mapWrap}>
-        <MapView style={styles.map} initialRegion={initialRegion} clusterColor="#0E7490" animationEnabled>
-          {aggregates.map((place) => (
-            <Marker key={place.key} coordinate={{ latitude: place.latitude, longitude: place.longitude }}>
-              <Callout>
-                <View style={styles.callout}>
-                  <Text style={styles.calloutTitle}>{place.placeName}</Text>
-                  <Text style={styles.calloutMeta}>{CATEGORY_LABELS[place.category]}</Text>
-                  <Text style={styles.calloutMeta}>Visits: {place.visitCount}</Text>
-                  <Text style={styles.calloutMeta}>Last visited: {formatDateTime(place.lastVisitedAt)}</Text>
-                  <Text style={styles.calloutMeta}>Total time: {formatDurationMinutes(place.totalMinutes)}</Text>
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-
-          {aggregates.map((place) => (
-            <Circle
-              key={`${place.key}-heat`}
-              center={{ latitude: place.latitude, longitude: place.longitude }}
-              radius={Math.min(1200, 120 + place.visitCount * 80)}
-              fillColor={`rgba(14, 116, 144, ${Math.min(0.42, 0.08 + place.visitCount * 0.04)})`}
-              strokeColor="rgba(14, 116, 144, 0.15)"
-            />
-          ))}
-        </MapView>
-      </View>
-
-      <LifeReplay
-        frames={filteredVisits
-          .map((visit) => ({
-            timestamp: visit.arrivedAt,
-            latitude: visit.latitude,
-            longitude: visit.longitude,
-            placeName: visit.placeName,
-          }))
-          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())}
+      <FlatList
+        data={aggregates}
+        keyExtractor={(place) => place.key}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<Text style={styles.empty}>No places match your filters.</Text>}
+        renderItem={({ item: place }) => (
+          <View style={styles.placeCard}>
+            <Text style={styles.placeTitle}>{place.placeName}</Text>
+            <Text style={styles.placeMeta}>{CATEGORY_LABELS[place.category]}</Text>
+            <Text style={styles.placeMeta}>Visits: {place.visitCount}</Text>
+            <Text style={styles.placeMeta}>Last visited: {formatDateTime(place.lastVisitedAt)}</Text>
+            <Text style={styles.placeMeta}>Total time: {formatDurationMinutes(place.totalMinutes)}</Text>
+          </View>
+        )}
       />
+
+      <View style={styles.replayWrap}>
+        <LifeReplay
+          frames={filteredVisits
+            .map((visit) => ({
+              timestamp: visit.arrivedAt,
+              latitude: visit.latitude,
+              longitude: visit.longitude,
+              placeName: visit.placeName,
+            }))
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())}
+        />
+      </View>
     </ScreenContainer>
   );
 }
@@ -177,28 +147,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
   },
-  mapWrap: {
-    flex: 1,
-    borderRadius: 22,
-    margin: 16,
-    marginTop: 10,
-    overflow: 'hidden',
+  listContent: {
+    padding: 16,
+    gap: 10,
+  },
+  placeCard: {
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#D9E2EC',
-  },
-  map: {
-    flex: 1,
-  },
-  callout: {
-    minWidth: 180,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
     gap: 2,
   },
-  calloutTitle: {
+  placeTitle: {
     fontWeight: '700',
     color: '#102A43',
   },
-  calloutMeta: {
+  placeMeta: {
     color: '#334E68',
     fontSize: 12,
+  },
+  empty: {
+    color: '#627D98',
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  replayWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });

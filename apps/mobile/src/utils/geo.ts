@@ -21,11 +21,3 @@ export const haversineDistanceMeters = (
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_METERS * c;
 };
-
-export const getMapRegionDelta = (zoomLevel = 8) => {
-  const latitudeDelta = Math.max(0.005, 50 / zoomLevel);
-  return {
-    latitudeDelta,
-    longitudeDelta: latitudeDelta,
-  };
-};
