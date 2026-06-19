@@ -37,5 +37,17 @@ func (h *PlacesHandler) addPlace(e *echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
+	payload := &Place{
+		Name:        request.Name,
+		Description: &request.Description,
+		Address:     &request.Address,
+		City:        &request.City,
+		Country:     &request.Country,
+		State:       &request.State,
+		SourceType:  request.SourceType,
+	}
+
+	h.placesService.AddPlace(payload)
+
 	return e.JSON(http.StatusOK, map[string]string{"message": "Place added successfully"})
 }
