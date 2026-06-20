@@ -14,6 +14,11 @@ import (
 type Config struct {
 	Supabase SupabaseConfig `koanf:"supabase"`
 	Database DatabaseConfig `koanf:"database"`
+	Google   GoogleConfig   `koanf:"google"`
+}
+
+type GoogleConfig struct {
+	PlacesApiKey string `koanf:"places_api_key" validate:"required"`
 }
 
 type SupabaseConfig struct {
@@ -67,6 +72,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("supabase.project_reference", c.Supabase.ProjectReference),
 		slog.String("supabase.api_key", redactSecret(c.Supabase.ApiKey)),
 		slog.String("database.db_url", redactSecret(c.Database.DbURL)),
+		slog.String("google.places_api_key", redactSecret(c.Google.PlacesApiKey)),
 	)
 }
 
