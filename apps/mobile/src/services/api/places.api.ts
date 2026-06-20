@@ -115,7 +115,7 @@ export const PLACES_PAGE_TOKEN_DELAY_MS = 2000;
 /** Build a photo URL served by the backend proxy */
 export const getPhotoUrl = (photoReference: string, maxWidth = 800): string => {
   const url = new URL(`${API_BASE_URL}${API_ENDPOINTS.places.photo}`);
-  url.searchParams.set('reference', photoReference);
+  url.searchParams.set('photo_reference', photoReference);
   url.searchParams.set('maxwidth', String(maxWidth));
   return url.toString();
 };

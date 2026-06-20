@@ -1,16 +1,21 @@
 package places
 
-import "errors"
-
-var errGooglePlacesNotConfigured = errors.New("google places is not configured")
-
 type PlacesService struct {
-	placesRepository *PlacesRepository
-	google           *GooglePlacesClient
+	placesRepository    *PlacesRepository
+	google              *GooglePlacesClient
+	defaultSearchRadius int
 }
 
-func NewPlaceService(pr *PlacesRepository, google *GooglePlacesClient) *PlacesService {
-	return &PlacesService{placesRepository: pr, google: google}
+func NewPlaceService(pr *PlacesRepository, google *GooglePlacesClient, defaultSearchRadius int) *PlacesService {
+	if defaultSearchRadius <= 0 {
+		defaultSearchRadius = 5000
+	}
+
+	return &PlacesService{
+		placesRepository:    pr,
+		google:              google,
+		defaultSearchRadius: defaultSearchRadius,
+	}
 }
 
 func (s *PlacesService) AddPlace(place *Place) error {

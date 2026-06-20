@@ -2,23 +2,12 @@ package places
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v5"
 )
 
 type PlacesHandler struct {
 	placesService *PlacesService
-}
-
-type AddPlaceRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Address     string `json:"address"`
-	City        string `json:"city"`
-	State       string `json:"state"`
-	Country     string `json:"country"`
-	SourceType  string `json:"source_type"`
 }
 
 func NewPlacesHandler(service *PlacesService) *PlacesHandler {
@@ -35,54 +24,40 @@ func (h *PlacesHandler) RegisterRoutes(e *echo.Echo) {
 }
 
 func (h *PlacesHandler) searchNearby(c *echo.Context) error {
-	latitude, err := strconv.ParseFloat(c.QueryParam("lat"), 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "lat is required and must be a number")
+	request := new(SearchNearbyRequest)
+	if err := bindAndValidate(c, request); err != nil {
+		return err
 	}
 
-	longitude, err := strconv.ParseFloat(c.QueryParam("lng"), 64)
+	result, err := h.placesService.SearchNearby(NearbySearchParams{
+		Latitude:  request.Lat,
+		Longitude: request.Lng,
+		Radius:    request.Radius,
+		PlaceType: request.Type,
+		Keyword:   request.Keyword,
+		PageToken: request.PageToken,
+	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "lng is required and must be a number")
-	}
-
-	radius := defaultSearchRadius
-	if value := c.QueryParam("radius"); value != "" {
-		parsedRadius, err := strconv.Atoi(value)
-		if err != nil || parsedRadius <= 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "radius must be a positive integer")
-		}
-		radius = parsedRadius
-	}
-
-	result, err := h.placesService.SearchNearby(
-		latitude,
-		longitude,
-		radius,
-		c.QueryParam("type"),
-		c.QueryParam("keyword"),
-		c.QueryParam("pagetoken"),
-	)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return placesHTTPError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, result)
 }
 
 func (h *PlacesHandler) searchText(c *echo.Context) error {
-	query := c.QueryParam("query")
-	if query == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "query is required")
+	request := new(SearchTextRequest)
+	if err := bindAndValidate(c, request); err != nil {
+		return err
 	}
 
-	result, err := h.placesService.SearchText(
-		query,
-		c.QueryParam("type"),
-		c.QueryParam("keyword"),
-		c.QueryParam("pagetoken"),
-	)
+	result, err := h.placesService.SearchText(TextSearchParams{
+		Query:     request.Query,
+		PlaceType: request.Type,
+		Keyword:   request.Keyword,
+		PageToken: request.PageToken,
+	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return placesHTTPError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, result)
@@ -96,21 +71,21 @@ func (h *PlacesHandler) getPlaceDetails(c *echo.Context) error {
 
 	result, err := h.placesService.GetPlaceDetails(placeID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return placesHTTPError(c, err)
 	}
 
 	return c.Blob(http.StatusOK, "application/json", result)
 }
 
 func (h *PlacesHandler) getPhoto(c *echo.Context) error {
-	reference := c.QueryParam("reference")
-	if reference == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "reference is required")
+	request := new(GetPhotoRequest)
+	if err := bindAndValidate(c, request); err != nil {
+		return err
 	}
 
-	contentType, data, err := h.placesService.FetchPhoto(reference, c.QueryParam("maxwidth"))
+	contentType, data, err := h.placesService.FetchPhoto(request.PhotoReference, request.MaxWidth)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		return placesHTTPError(c, err)
 	}
 
 	return c.Blob(http.StatusOK, contentType, data)
@@ -122,6 +97,9 @@ func (h *PlacesHandler) addPlace(c *echo.Context) error {
 	}
 	if err := c.Bind(request); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+	if err := requestValidator.Struct(request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, formatValidationError(err))
 	}
 
 	payload := &Place{

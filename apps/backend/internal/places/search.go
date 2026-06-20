@@ -1,31 +1,54 @@
 package places
 
-import (
-	"encoding/json"
-	"strconv"
-)
+import "encoding/json"
 
-func (s *PlacesService) SearchNearby(
-	latitude, longitude float64,
-	radius int,
-	placeType, keyword, pageToken string,
-) (*SearchPage, error) {
-	if s.google == nil {
-		return nil, errGooglePlacesNotConfigured
-	}
-	if radius <= 0 {
-		radius = defaultSearchRadius
-	}
-	return s.google.NearbySearch(latitude, longitude, radius, placeType, keyword, pageToken)
+type NearbySearchParams struct {
+	Latitude  float64
+	Longitude float64
+	Radius    int
+	PlaceType string
+	Keyword   string
+	PageToken string
 }
 
-func (s *PlacesService) SearchText(
-	query, placeType, keyword, pageToken string,
-) (*SearchPage, error) {
+type TextSearchParams struct {
+	Query     string
+	PlaceType string
+	Keyword   string
+	PageToken string
+}
+
+func (s *PlacesService) SearchNearby(params NearbySearchParams) (*SearchPage, error) {
 	if s.google == nil {
 		return nil, errGooglePlacesNotConfigured
 	}
-	return s.google.TextSearch(query, placeType, keyword, pageToken)
+
+	radius := params.Radius
+	if radius <= 0 {
+		radius = s.defaultSearchRadius
+	}
+
+	return s.google.NearbySearch(
+		params.Latitude,
+		params.Longitude,
+		radius,
+		params.PlaceType,
+		params.Keyword,
+		params.PageToken,
+	)
+}
+
+func (s *PlacesService) SearchText(params TextSearchParams) (*SearchPage, error) {
+	if s.google == nil {
+		return nil, errGooglePlacesNotConfigured
+	}
+
+	return s.google.TextSearch(
+		params.Query,
+		params.PlaceType,
+		params.Keyword,
+		params.PageToken,
+	)
 }
 
 func (s *PlacesService) GetPlaceDetails(placeID string) (json.RawMessage, error) {
@@ -40,9 +63,6 @@ func (s *PlacesService) FetchPhoto(photoReference, maxWidth string) (string, []b
 		return "", nil, errGooglePlacesNotConfigured
 	}
 	if maxWidth == "" {
-		maxWidth = "800"
-	}
-	if _, err := strconv.Atoi(maxWidth); err != nil {
 		maxWidth = "800"
 	}
 	return s.google.FetchPhoto(photoReference, maxWidth)

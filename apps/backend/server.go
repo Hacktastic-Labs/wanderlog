@@ -40,7 +40,7 @@ func main() {
 	authHandler := auth.NewAuthHandler(authService)
 	placesRepository := places.NewPlaceRepo(dbConn)
 	googlePlacesClient := places.NewGooglePlacesClient(cfg.Google.PlacesApiKey)
-	placesService := places.NewPlaceService(placesRepository, googlePlacesClient)
+	placesService := places.NewPlaceService(placesRepository, googlePlacesClient, cfg.Google.DefaultSearchRadius)
 	placesHandler := places.NewPlacesHandler(placesService)
 
 	// i was calling the handler here using SignUpPassHandler(c) which was a error, but echo injects the context into the handler automatically

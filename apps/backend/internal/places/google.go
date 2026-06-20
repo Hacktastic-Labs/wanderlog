@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-const (
-	googlePlacesBaseURL = "https://maps.googleapis.com/maps/api/place"
-	defaultSearchRadius = 5000
-)
+const googlePlacesBaseURL = "https://maps.googleapis.com/maps/api/place"
 
 type GooglePlacesClient struct {
 	apiKey     string
@@ -131,10 +128,10 @@ func (c *GooglePlacesClient) PlaceDetails(placeID string) (json.RawMessage, erro
 	}
 
 	if parsed.Status != "OK" {
-		return nil, fmt.Errorf("%s", googleErrorMessage(parsed.Status, parsed.ErrorMessage))
+		return nil, googleAPIError(parsed.Status, parsed.ErrorMessage)
 	}
 	if len(parsed.Result) == 0 {
-		return nil, fmt.Errorf("place not found")
+		return nil, ErrPlaceNotFound
 	}
 
 	return parsed.Result, nil
@@ -184,7 +181,7 @@ func (c *GooglePlacesClient) search(path string, params url.Values) (*SearchPage
 	}
 
 	if parsed.Status != "OK" && parsed.Status != "ZERO_RESULTS" {
-		return nil, fmt.Errorf("%s", googleErrorMessage(parsed.Status, parsed.ErrorMessage))
+		return nil, googleAPIError(parsed.Status, parsed.ErrorMessage)
 	}
 
 	if len(parsed.Results) == 0 {
@@ -226,9 +223,3 @@ func (c *GooglePlacesClient) get(path string, params url.Values) ([]byte, error)
 	return body, nil
 }
 
-func googleErrorMessage(status, message string) string {
-	if message != "" {
-		return message
-	}
-	return status
-}
