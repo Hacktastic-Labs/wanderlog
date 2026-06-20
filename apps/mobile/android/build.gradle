@@ -20,5 +20,23 @@ allprojects {
   }
 }
 
+// Override NDK and CMake versions
+ext {
+    ndkVersion = "30.0.14904198"
+}
+
+// Force CMake 3.31.6 for all subprojects to avoid infinite reconfigure loop with 3.22.1 on Windows
+allprojects {
+    plugins.withId("com.android.library") {
+        android {
+            externalNativeBuild {
+                cmake {
+                    version "3.31.6"
+                }
+            }
+        }
+    }
+}
+
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
