@@ -12,4 +12,10 @@ export const API_ENDPOINTS = {
     signIn: '/auth/signin',
     signUp: '/auth/signup',
   },
+  places: {
+    nearbySearch: '/places/search/nearby',
+    textSearch: '/places/search/text',
+    details: (placeId: string) => `/places/${encodeURIComponent(placeId)}/details`,
+    photo: '/places/photo',
+  },
 } as const;
