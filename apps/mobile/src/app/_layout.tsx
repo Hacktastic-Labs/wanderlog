@@ -48,6 +48,8 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="place" />
+          <Stack.Screen name="explore" />
           <Stack.Screen name="index" />
         </Stack>
       </QueryClientProvider>
