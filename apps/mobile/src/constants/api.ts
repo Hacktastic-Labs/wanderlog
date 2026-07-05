@@ -5,7 +5,7 @@
  * backend server. Defaults to the standard local Go backend port.
  */
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.71:1323';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.54.227.64:1323';
 
 export const API_ENDPOINTS = {
   auth: {
@@ -17,5 +17,8 @@ export const API_ENDPOINTS = {
     textSearch: '/places/search/text',
     details: (placeId: string) => `/places/${encodeURIComponent(placeId)}/details`,
     photo: '/places/photo',
+  },
+  plans: {
+    create: '/plans/create',
   },
 } as const;

@@ -9,6 +9,7 @@ import (
 	"github.com/Hacktastic-Labs/wanderlog/internal/config"
 	"github.com/Hacktastic-Labs/wanderlog/internal/database"
 	"github.com/Hacktastic-Labs/wanderlog/internal/places"
+	"github.com/Hacktastic-Labs/wanderlog/internal/plans"
 	"github.com/Hacktastic-Labs/wanderlog/internal/users"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -43,9 +44,14 @@ func main() {
 	placesService := places.NewPlaceService(placesRepository, googlePlacesClient, cfg.Google.DefaultSearchRadius)
 	placesHandler := places.NewPlacesHandler(placesService)
 
+	plansRepository := plans.NewRepository(dbConn)
+	plansService := plans.NewPlanService(plansRepository)
+	plansHandler := plans.NewPlanHandler(plansService)
+
 	// i was calling the handler here using SignUpPassHandler(c) which was a error, but echo injects the context into the handler automatically
 	authHandler.RegisterRoutes(e)
 	placesHandler.RegisterRoutes(e)
+	plansHandler.RegisterRoutes(e)
 
 	if err := e.Start(":1323"); err != nil {
 		e.Logger.Error("failed to start server", "error", err)

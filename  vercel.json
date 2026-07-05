@@ -1,0 +1,8 @@
+{
+    "services": {
+      "backend": {
+        "root": "apps/backend/",
+        "entrypoint": "Dockerfile.vercel"
+      }
+    }
+  }

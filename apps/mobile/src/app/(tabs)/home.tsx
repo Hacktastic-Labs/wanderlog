@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InsightCard } from '@/components/home/insight-card';
@@ -31,7 +32,18 @@ export default function HomeScreen() {
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <WelcomeSection greeting={greeting} firstName={firstName} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <WelcomeSection greeting={greeting} firstName={firstName} />
+          </View>
+          <Pressable
+            onPress={() => router.push('/plans/create')}
+            style={({ pressed }) => [styles.plusButton, { opacity: pressed ? 0.8 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Create plan">
+            <Text style={styles.plusIcon}>+</Text>
+          </Pressable>
+        </View>
 
         <SearchBar
           value={query}
@@ -84,6 +96,30 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     gap: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  headerText: {
+    flex: 1,
+  },
+  plusButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f4a261',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderCurve: 'continuous',
+  },
+  plusIcon: {
+    color: '#ffffff',
+    fontSize: 28,
+    lineHeight: 30,
+    fontWeight: '700',
   },
   visitList: {
     gap: 10,
