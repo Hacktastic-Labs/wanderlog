@@ -14,7 +14,7 @@ func NewRepository(db *bun.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreatePlan(plan *Plan) error {
+func (r *Repository) CreatePlan(ctx context.Context, plan *Plan) error {
 	_, err := r.db.NewInsert().Model(plan).Returning("*").Exec(context.Background())
 	if err != nil {
 		return err
@@ -22,7 +22,7 @@ func (r *Repository) CreatePlan(plan *Plan) error {
 	return nil
 }
 
-func (r *Repository) ListPlansForUser(userId int64) ([]Plan, error) {
+func (r *Repository) ListPlansForUser(ctx context.Context, userId int64) ([]Plan, error) {
 	plans := []Plan{}
 	err := r.db.NewSelect().Model(&plans).Where("created_by = ?", userId).Scan(context.Background())
 	if err != nil {
