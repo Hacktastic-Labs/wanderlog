@@ -1,0 +1,19 @@
+# Environment files — may contain secrets
+.env
+.env.local
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Vercel
+.vercel
+
+# Documentation / misc
+README.md
+repomix-output.md
+
+# Docker files
+Dockerfile*
+.dockerignore

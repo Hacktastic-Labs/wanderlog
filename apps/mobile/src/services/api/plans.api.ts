@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
+import { useAuthStore } from '@/stores/auth.store';
 
 export type CreatePlanRequest = {
   title: string;
@@ -26,11 +27,16 @@ class PlansApiError extends Error {
 
 export async function createPlan(payload: CreatePlanRequest): Promise<CreatePlanResponse> {
   const url = `${API_BASE_URL}${API_ENDPOINTS.plans.create}`;
+  const token = useAuthStore.getState().session?.accessToken;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 

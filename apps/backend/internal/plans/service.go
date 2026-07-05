@@ -2,6 +2,8 @@ package plans
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 )
 
 type PlanRepository interface {
@@ -43,5 +45,10 @@ func NewPlanService(planRepository PlanRepository) *PlanService {
 }
 
 func (s *PlanService) CreatePlan(ctx context.Context, plan *Plan) error {
-	return s.planRepository.CreatePlan(ctx, plan)
+	err := s.planRepository.CreatePlan(ctx, plan)
+	if err != nil {
+		slog.Error("failed to create plan", "title", plan.Title, "error", err)
+		return fmt.Errorf("create plan: %w", err)
+	}
+	return nil
 }

@@ -48,12 +48,18 @@ func main() {
 	plansService := plans.NewPlanService(plansRepository)
 	plansHandler := plans.NewPlanHandler(plansService)
 
+	e.Use(authService.RequireAuth())
+
 	// i was calling the handler here using SignUpPassHandler(c) which was a error, but echo injects the context into the handler automatically
 	authHandler.RegisterRoutes(e)
 	placesHandler.RegisterRoutes(e)
 	plansHandler.RegisterRoutes(e)
 
-	if err := e.Start(":1323"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "1323"
+	}
+	if err := e.Start(":" + port); err != nil {
 		e.Logger.Error("failed to start server", "error", err)
 	}
 }

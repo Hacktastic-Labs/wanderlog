@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/Hacktastic-Labs/wanderlog/internal/users"
 	supabaseAuth "github.com/supabase-community/auth-go"
@@ -48,4 +49,27 @@ func (s *AuthService) SignInWithEmailAndPassword(email string, password string) 
 		return nil, err
 	}
 	return res, nil
+}
+
+func (s *AuthService) GetUserFromToken(token string) (*ContextUser, error) {
+	client := s.supabaseClient.WithToken(token)
+	userInfo, err := client.GetUser()
+
+	if err != nil {
+		slog.Error("failed to get auth user", "error", err)
+		return nil, fmt.Errorf("auth failed: %w", err)
+	}
+
+	dbUserId, err := s.usersRepository.GetUserByAuthID(userInfo.ID)
+
+	if err != nil {
+		slog.Error("failed to get db user record", "error", err)
+		return nil, fmt.Errorf("auth failed: %w", err)
+	}
+
+	return &ContextUser{
+		ID:     userInfo.ID,
+		Email:  userInfo.Email,
+		UserId: dbUserId.ID,
+	}, nil
 }

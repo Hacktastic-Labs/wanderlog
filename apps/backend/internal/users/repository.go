@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 
@@ -26,6 +27,14 @@ func (r *Repository) CreateUser(user *User) error {
 func (r *Repository) GetUserByID(id int64) (*User, error) {
 	user := &User{}
 	err := r.db.NewSelect().Model(user).Where("id = ?", id).Scan(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+func (r *Repository) GetUserByAuthID(id uuid.UUID) (*User, error) {
+	user := &User{}
+	err := r.db.NewSelect().Model(user).Where("auth_user_id = ?", id).Scan(context.Background())
 	if err != nil {
 		return nil, err
 	}

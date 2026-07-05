@@ -1,10 +1,10 @@
 package plans
 
 import (
-	"context"
 	"net/http"
 	"time"
 
+	"github.com/Hacktastic-Labs/wanderlog/internal/auth"
 	"github.com/labstack/echo/v5"
 )
 
@@ -34,16 +34,24 @@ func (h *PlanHandler) RegisterRoutes(e *echo.Echo) {
 func (h *PlanHandler) CreatePlan(c *echo.Context) error {
 	request := new(CreatePlanRequest)
 	if err := c.Bind(request); err != nil {
+		c.Logger().Error("invalid request body", "error", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	startDate, err := time.Parse(time.DateOnly, request.StartDate)
 	if err != nil {
+		c.Logger().Error("invalid start date", "start_date", request.StartDate, "error", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid start date")
 	}
 	endDate, err := time.Parse(time.DateOnly, request.EndDate)
 	if err != nil {
+		c.Logger().Error("invalid end date", "end_date", request.EndDate, "error", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid end date")
+	}
+
+	user, ok := c.Get(string(auth.ContextUserKey)).(*auth.ContextUser)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "user not found")
 	}
 
 	payload := &Plan{
@@ -54,10 +62,12 @@ func (h *PlanHandler) CreatePlan(c *echo.Context) error {
 		StartDate:     &startDate,
 		EndDate:       &endDate,
 		EstimatedCost: &request.EstimatedCost,
+		CreatedBy:     user.UserId,
 	}
 
-	err = h.planService.CreatePlan(context.Background(), payload)
+	err = h.planService.CreatePlan(c.Request().Context(), payload)
 	if err != nil {
+		c.Logger().Error("failed to create plan", "title", request.Title, "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create plan")
 	}
 
