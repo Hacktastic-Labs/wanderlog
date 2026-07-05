@@ -5,7 +5,7 @@
  * backend server. Defaults to the standard local Go backend port.
  */
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.101:1323';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://w-backend-phi.vercel.app';
 
 export const API_ENDPOINTS = {
   auth: {
