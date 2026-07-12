@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WanderLog — Prototype</title>
+
+  <!-- Fonts: Chelsea Market (display) + Bricolage Grotesque (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chelsea+Market&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ===================================================================
+       DESIGN TOKENS  (mirrors apps/mobile/src/constants/colors.ts & theme.ts)
+       =================================================================== */
+    :root {
+      --bg:            #000000;
+      --fg:            #ffffff;
+      --fg-inverse:    #000000;
+      --muted:         #8e8e93;
+      --muted-2:       #636366;
+      --border:        #333333;
+      --input:         #1c1c1e;
+      --input-2:       #2c2c2e;
+      --card:          #1c1c1e;
+      --accent:        #f4a261;
+      --accent-dim:    rgba(244, 162, 97, 0.15);
+      --accent-2:      #e76f51;
+      --error:         #ff453a;
+      --radius-sm:     12px;
+      --radius-md:     16px;
+      --radius-lg:     24px;
+      --radius-pill:   999px;
+
+      --font-display:  "Chelsea Market", cursive;
+      --font-body:     "Bricolage Grotesque", system-ui, sans-serif;
+      --font-semibold: "Bricolage Grotesque", system-ui, sans-serif;
+    }
+
+    /* ===================================================================
+       RESET
+       =================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: #0a0a0a;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* ===================================================================
+       PHONE MOCKUP FRAME
+       =================================================================== */
+    .phone-outer {
+      position: relative;
+      width: 390px;
+      height: 844px;
+      background: #1a1a1c;
+      border-radius: 55px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 2px #2a2a2c,
+        0 50px 100px -20px rgba(0,0,0,0.8),
+        0 30px 60px -30px rgba(244, 162, 97, 0.15);
+      flex-shrink: 0;
+    }
+
+    /* side buttons */
+    .phone-outer::before {
+      content: "";
+      position: absolute;
+      left: -3px;
+      top: 170px;
+      width: 4px;
+      height: 70px;
+      background: #1a1a1c;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 90px 0 #1a1a1c, 0 180px 0 #1a1a1c;
+    }
+    .phone-outer::after {
+      content: "";
+      position: absolute;
+      right: -3px;
+      top: 200px;
+      width: 4px;
+      height: 100px;
+      background: #1a1a1c;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .phone-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dynamic Island */
+    .dynamic-island {
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 37px;
+      background: #000;
+      border-radius: var(--radius-pill);
+      z-index: 100;
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px 4px;
+      height: 54px;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+    .status-bar .time {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--fg);
+      letter-spacing: -0.2px;
+    }
+    .status-bar .icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--fg);
+    }
+    .status-bar .icons svg { display: block; }
+
+    /* Home indicator */
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 134px;
+      height: 5px;
+      background: var(--fg);
+      border-radius: var(--radius-pill);
+      z-index: 100;
+      opacity: 0.9;
+    }
+
+    /* ===================================================================
+       SCREENS — shared
+       =================================================================== */
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .screen.active {
+      display: flex;
+      animation: screen-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes screen-enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .screen-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .screen-scroll::-webkit-scrollbar { display: none; }
+    .screen-scroll { scrollbar-width: none; }
+
+    /* ===================================================================
+       DECORATIVE CIRCLES (shared across auth screens)
+       =================================================================== */
+    .deco-circle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* ===================================================================
+       AUTH HEADER (top section of welcome/login/signup)
+       =================================================================== */
+    .auth-header {
+      position: relative;
+      flex-shrink: 0;
+      padding: 16px 28px 40px;
+      overflow: hidden;
+    }
+
+    .auth-header .brand {
+      position: relative;
+      z-index: 2;
+    }
+
+    .auth-header .logo-text {
+      font-family: var(--font-display);
+      font-size: 32px;
+      color: var(--fg);
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    .auth-header .logo-text.center {
+      text-align: center;
+      font-size: 44px;
+      margin-top: 60px;
+    }
+
+    .auth-header .tagline {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--accent);
+      margin-top: 4px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .auth-header .tagline.center {
+      text-align: center;
+      font-size: 15px;
+      margin-top: 8px;
+    }
+
+    /* Wavy line divider for login/signup headers */
+    .wave-divider {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      pointer-events: none;
+    }
+
+    /* ===================================================================
+       AUTH CARD (overlapping the header)
+       =================================================================== */
+    .auth-card {
+      flex: 1;
+      background: var(--card);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 28px 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      z-index: 10;
+      margin-top: -20px;
+    }
+
+    .card-back {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-pill);
+      background: var(--input-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      color: var(--fg);
+      font-size: 20px;
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      transition: background 0.15s;
+    }
+    .card-back:active { background: #3a3a3c; }
+
+    .card-title {
+      font-family: var(--font-body);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--fg);
+      margin-top: 50px;
+      margin-bottom: 4px;
+    }
+    .card-title.center { text-align: center; margin-top: 0; }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input {
+      width: 100%;
+      background: var(--input-2);
+      color: var(--fg);
+      border: 1.5px solid transparent;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      border-color: var(--accent);
+      background: #3a3a3c;
+    }
+
+    /* ===================================================================
+       BUTTONS
+       =================================================================== */
+    .btn-primary {
+      width: 100%;
+      background: var(--fg);
+      color: var(--fg-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 16px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+    .btn-outline {
+      width: 100%;
+      background: transparent;
+      color: var(--fg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-pill);
+      padding: 16px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-outline:active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* ===================================================================
+       WELCOME SCREEN specific
+       =================================================================== */
+    .welcome-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: var(--input-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 4px;
+      border: 1.5px solid #3a3a3c;
+    }
+    .welcome-icon svg { display: block; }
+
+    .welcome-body {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 23px;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    .pagination-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 4px 0 8px;
+    }
+    .pagination-dots .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-pill);
+      background: #3a3a3c;
+      transition: background 0.2s;
+    }
+    .pagination-dots .dot.active { background: var(--fg); }
+
+    .welcome-footer {
+      text-align: center;
+      margin-top: 4px;
+    }
+    .welcome-footer .link {
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      padding: 0;
+    }
+    .welcome-footer .link strong {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    /* ===================================================================
+       AUTH CARD footer links (login/signup)
+       =================================================================== */
+    .card-footer {
+      text-align: center;
+      margin-top: auto;
+      padding-top: 8px;
+    }
+    .card-footer .link {
+      color: var(--muted);
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      padding: 0;
+    }
+    .card-footer .link.forgot {
+      display: block;
+      margin: 0 auto 12px;
+      width: fit-content;
+    }
+    .card-footer .link strong {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    /* ===================================================================
+       HOME SCREEN
+       =================================================================== */
+    .home-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 16px 120px;
+      gap: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .home-scroll::-webkit-scrollbar { display: none; }
+    .home-scroll { scrollbar-width: none; }
+
+    .home-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .home-welcome {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .home-greeting {
+      font-family: var(--font-display);
+      font-size: 30px;
+      line-height: 38px;
+      color: var(--fg);
+    }
+    .home-greeting .name {
+      color: var(--accent);
+    }
+
+    .home-subtitle {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .home-plus-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .home-plus-btn:active { opacity: 0.8; }
+    .home-plus-btn span {
+      color: var(--fg);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 28px;
+    }
+
+    /* Search bar */
+    .home-search {
+      display: flex;
+      align-items: center;
+      background: var(--input);
+      border-radius: var(--radius-pill);
+      padding-left: 16px;
+      padding-right: 6px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      gap: 8px;
+    }
+    .home-search input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--fg);
+      padding: 8px 0;
+    }
+    .home-search input::placeholder { color: var(--muted); }
+    .home-search-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .home-search-btn:active { opacity: 0.8; }
+    .home-search-btn span {
+      color: var(--fg);
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+    .section-header .title {
+      font-family: var(--font-body);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+    .section-header .action {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .stat-card {
+      flex: 1 1 47%;
+      min-width: 47%;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-card .emoji {
+      font-size: 18px;
+      line-height: 22px;
+    }
+    .stat-card .value {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 26px;
+      color: var(--fg);
+      line-height: 30px;
+    }
+    .stat-card .label {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Recent visits */
+    .visit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .visit-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+    .visit-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--input-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .visit-icon .emoji {
+      font-size: 22px;
+    }
+    .visit-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .visit-name {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--fg);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .visit-category {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .visit-meta {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .visit-location {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted-2);
+    }
+
+    /* Insights horizontal scroll */
+    .insights-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-right: 16px;
+      padding-bottom: 4px;
+    }
+    .insights-scroll::-webkit-scrollbar { display: none; }
+    .insights-scroll { scrollbar-width: none; }
+
+    .insight-card {
+      width: 160px;
+      flex-shrink: 0;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .insight-card .emoji {
+      font-size: 22px;
+      line-height: 26px;
+    }
+    .insight-card .card-label {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .insight-card .card-value {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--fg);
+      line-height: 20px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .insight-card .card-subtitle {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    /* Demo hint */
+    .demo-hint {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted-2);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* ===================================================================
+       PLANS SCREEN
+       =================================================================== */
+    #screen-plans {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    #screen-plans.active {
+      display: flex;
+      animation: screen-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Title row */
+    .plans-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px 6px;
+      flex-shrink: 0;
+    }
+    .plans-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      line-height: 40px;
+      color: var(--fg);
+      letter-spacing: -1px;
+    }
+    .plans-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .plans-icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-pill);
+      background: var(--input);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--fg);
+      transition: background 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .plans-icon-btn:active { opacity: 0.7; }
+    .plans-icon-btn span {
+      color: var(--fg);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 24px;
+    }
+
+    /* Segmented slider (scrollable tab bar) */
+    .plans-slider-tabs {
+      display: flex;
+      background: var(--input);
+      border-radius: var(--radius-pill);
+      margin: 4px 16px 0;
+      padding: 4px;
+      position: relative;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .plans-slider-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 10px 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--radius-pill);
+      position: relative;
+      z-index: 2;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .plans-slider-tab.active { color: var(--fg-inverse); }
+    .plans-slider-indicator {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      background: var(--fg);
+      border-radius: var(--radius-pill);
+      left: 4px;
+      width: 0;
+      transition: left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Swipe panes horizontal slider */
+    .plans-slider-content {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: flex;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+    }
+    .plans-slider-content::-webkit-scrollbar { display: none; }
+
+    .plans-slider-pane {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      scroll-snap-align: center;
+      padding: 16px 16px 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: none;
+    }
+    .plans-slider-pane::-webkit-scrollbar { display: none; }
+
+    /* Date group heading */
+    .date-group-heading {
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: -8px;
+      margin-top: 4px;
+      padding-left: 2px;
+    }
+
+    /* Plan card */
+    .plan-card {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .plan-card:active { background: #262629; }
+
+    .plan-emoji {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--input-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 22px;
+      line-height: 26px;
+    }
+    .plan-card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .plan-title {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--fg);
+    }
+    .plan-meta {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .plan-people {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Plans overview */
+    .plans-overview-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 2px;
+    }
+    .plans-overview-heading h2 {
+      font-family: var(--font-body);
+      font-size: 20px;
+      line-height: 26px;
+      font-weight: 700;
+      color: var(--fg);
+    }
+    .plans-overview-heading span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .monthly-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .monthly-stat-card {
+      min-height: 116px;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .monthly-stat-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: var(--input-2);
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+    }
+    .monthly-stat-value {
+      font-size: 25px;
+      line-height: 28px;
+      font-weight: 700;
+      color: var(--fg);
+      font-variant-numeric: tabular-nums;
+    }
+    .monthly-stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .plan-cost-card {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 16px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .plan-cost-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .plan-cost-card-title {
+      font-size: 16px;
+      line-height: 20px;
+      font-weight: 700;
+      color: var(--fg);
+    }
+    .plan-cost-card-subtitle {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chart-legend {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
+    .chart-dot { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--fg); }
+    .chart-dot.cost { background: var(--accent); }
+    .plan-cost-chart { width: 100%; height: 126px; overflow: visible; }
+    .drafts-card {
+      background: var(--accent-dim);
+      border: 1px solid rgba(244, 162, 97, 0.3);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .drafts-card:active { background: rgba(244, 162, 97, 0.22); }
+    .drafts-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: var(--fg-inverse);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .drafts-copy { flex: 1; min-width: 0; }
+    .drafts-title { font-size: 15px; font-weight: 700; color: var(--fg); }
+    .drafts-body { margin-top: 3px; font-size: 13px; line-height: 18px; color: var(--muted); }
+    .drafts-arrow { color: var(--accent); font-size: 23px; line-height: 24px; }
+    .settle-up-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .settle-up-card:active { background: #262629; }
+    .settle-up-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--input-2);
+      color: var(--accent);
+      font-size: 19px;
+      flex-shrink: 0;
+    }
+    .settle-up-copy { flex: 1; min-width: 0; }
+    .settle-up-title { font-size: 15px; font-weight: 700; color: var(--fg); }
+    .settle-up-body { margin-top: 3px; font-size: 13px; line-height: 18px; color: var(--muted); }
+
+    /* Invite detail */
+    .invite-detail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 124px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      scrollbar-width: none;
+    }
+    .invite-detail-scroll::-webkit-scrollbar { display: none; }
+    .invite-detail-header { display: flex; align-items: center; justify-content: space-between; }
+    .invite-detail-header h1 { font-family: var(--font-display); font-size: 23px; letter-spacing: -0.5px; color: var(--fg); }
+    .invite-detail-header-spacer { width: 40px; }
+    .invite-hero { background: var(--card); border-radius: var(--radius-lg); padding: 18px; }
+    .invite-kicker { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; }
+    .invite-plan-name { margin-top: 7px; color: var(--fg); font-size: 25px; line-height: 30px; font-weight: 700; }
+    .invite-plan-meta { margin-top: 8px; color: var(--muted); font-size: 14px; line-height: 20px; }
+    .invite-organizer { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--accent-dim); color: var(--accent); font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .organizer-copy { font-size: 13px; color: var(--muted); }
+    .organizer-copy strong { display: block; color: var(--fg); font-size: 14px; margin-bottom: 2px; }
+    .invite-section-title { color: var(--fg); font-size: 17px; font-weight: 700; }
+    .invite-itinerary {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      max-height: 172px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .invite-itinerary::-webkit-scrollbar { display: none; }
+    .itinerary-row { display: flex; gap: 12px; padding: 14px; }
+    .itinerary-row + .itinerary-row { border-top: 1px solid var(--border); }
+    .itinerary-time { width: 47px; color: var(--accent); font-size: 12px; font-weight: 700; padding-top: 2px; }
+    .itinerary-name { color: var(--fg); font-size: 14px; font-weight: 600; }
+    .itinerary-place { margin-top: 3px; color: var(--muted); font-size: 13px; }
+    .invite-summary-row { display: flex; gap: 10px; }
+    .invite-summary-card { flex: 1; min-width: 0; padding: 14px; background: var(--card); border-radius: var(--radius-md); }
+    .invite-summary-label { color: var(--muted); font-size: 12px; }
+    .invite-summary-value { margin-top: 5px; color: var(--fg); font-size: 17px; font-weight: 700; }
+    .invite-activity { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: var(--radius-md); padding: 14px; }
+    .invite-avatars { display: flex; padding-left: 8px; }
+    .invite-avatars .avatar { margin-left: -8px; border: 2px solid var(--card); }
+    .invite-activity-copy { color: var(--muted); font-size: 13px; text-align: right; }
+    .invite-activity-copy strong { display: block; color: var(--fg); font-size: 14px; margin-bottom: 2px; }
+    .rsvp-bar { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.96); border-top: 1px solid var(--border); padding: 12px 16px 30px; display: flex; gap: 10px; z-index: 5; }
+    .rsvp-btn { flex: 1; min-height: 50px; border-radius: var(--radius-pill); font-family: var(--font-body); font-size: 14px; font-weight: 700; cursor: pointer; }
+    .rsvp-decline { background: var(--input); color: var(--fg); border: 1px solid var(--border); }
+    .rsvp-accept { background: var(--accent); color: var(--fg-inverse); border: 1px solid var(--accent); }
+    .rsvp-btn:active { opacity: 0.75; transform: scale(0.98); }
+
+    /* Balances */
+    .balances-scroll { flex: 1; overflow-y: auto; padding: 8px 16px 112px; display: flex; flex-direction: column; gap: 18px; scrollbar-width: none; }
+    .balances-scroll::-webkit-scrollbar { display: none; }
+    .balances-total { border-radius: var(--radius-lg); background: var(--accent); padding: 20px; color: var(--fg-inverse); }
+    .balances-total-label { font-size: 13px; font-weight: 700; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.6px; }
+    .balances-total-value { margin-top: 6px; font-size: 31px; line-height: 36px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .balances-total-body { margin-top: 5px; font-size: 14px; opacity: 0.75; }
+    .balance-group { display: flex; flex-direction: column; gap: 10px; }
+    .balance-group-title { color: var(--fg); font-size: 17px; font-weight: 700; }
+    .balance-row { display: flex; align-items: center; gap: 11px; padding: 13px 14px; background: var(--card); border-radius: var(--radius-md); }
+    .balance-row-copy { flex: 1; min-width: 0; }
+    .balance-row-title { color: var(--fg); font-size: 14px; font-weight: 700; }
+    .balance-row-body { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .balance-row-amount { color: var(--fg); font-size: 14px; font-weight: 700; text-align: right; }
+    .balance-row-status { margin-top: 3px; color: var(--accent); font-size: 11px; font-weight: 700; text-align: right; }
+
+    /* Empty state inside a pane */
+    .pane-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px;
+      gap: 12px;
+      text-align: center;
+    }
+    .pane-empty .emoji { font-size: 56px; line-height: 60px; }
+    .pane-empty .title {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 20px;
+      color: var(--fg);
+    }
+    .pane-empty .body {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 22px;
+      max-width: 260px;
+    }
+
+    /* ===================================================================
+       BOTTOM TAB BAR
+       =================================================================== */
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 84px;
+      background: #000;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding-bottom: 24px;
+      z-index: 90;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 10px;
+      transition: color 0.15s;
+      padding: 8px 16px;
+    }
+    .tab-item.active { color: var(--fg); }
+    .tab-item svg { display: block; }
+
+    /* ===================================================================
+       CREATE PLAN SCREEN
+       =================================================================== */
+    .create-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 24px 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scrollbar-width: none;
+    }
+    .create-scroll::-webkit-scrollbar { display: none; }
+
+    .create-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .create-back {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--input);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--fg);
+      font-size: 20px;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .create-back:active { background: #3a3a3c; }
+
+    .create-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      color: var(--fg);
+      letter-spacing: -0.5px;
+    }
+    .create-header-spacer { width: 40px; flex-shrink: 0; }
+
+    .create-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .create-input {
+      width: 100%;
+      background: var(--input);
+      color: var(--fg);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-family: var(--font-body);
+      font-size: 16px;
+      outline: none;
+      transition: background 0.15s;
+    }
+    .create-input::placeholder { color: var(--muted); }
+    .create-input:focus { background: #262629; }
+
+    .create-textarea {
+      min-height: 80px;
+      resize: none;
+      line-height: 22px;
+    }
+
+    .create-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .create-label {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--muted);
+      padding-left: 2px;
+    }
+
+    /* Toggle row (visibility) */
+    .create-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--input);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+    }
+    .create-toggle-label {
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--fg);
+    }
+    .create-switch {
+      width: 51px;
+      height: 31px;
+      border-radius: 999px;
+      background: #333;
+      border: none;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .create-switch.on { background: var(--accent); }
+    .create-switch-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .create-switch.on .create-switch-knob {
+      transform: translateX(20px);
+      background: #fff;
+    }
+
+    /* Picker button (status) */
+    .create-picker-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--input);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .create-picker-btn-text {
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--fg);
+    }
+    .create-picker-arrow {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* Date button */
+    .create-date-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--input);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .create-date-btn-text {
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--fg);
+    }
+    .create-date-btn-emoji { font-size: 18px; }
+
+    /* Submit button (pill) */
+    .create-submit {
+      width: 100%;
+      background: var(--fg);
+      color: var(--fg-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      padding: 16px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      min-height: 52px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .create-submit:active { opacity: 0.85; transform: scale(0.98); }
+    .create-submit:disabled { opacity: 0.5; }
+
+    /* Plan items and drafts */
+    .plan-items-button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 16px; border: 1px dashed var(--muted-2); border-radius: var(--radius-sm); background: transparent; color: var(--fg); font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; }
+    .plan-items-button span:last-child { color: var(--accent); font-size: 20px; }
+    .item-sheet-content { max-height: 82%; gap: 16px; overflow-y: auto; }
+    .item-sheet-content::-webkit-scrollbar { display: none; }
+    .item-sheet-header { display: flex; align-items: center; justify-content: space-between; }
+    .item-sheet-header h2 { color: var(--fg); font-size: 20px; }
+    .sheet-close { width: 32px; height: 32px; border: none; border-radius: var(--radius-pill); background: var(--input-2); color: var(--fg); font-size: 20px; cursor: pointer; }
+    .item-field { display: flex; flex-direction: column; gap: 8px; }
+    .item-field label { color: var(--muted); font-size: 13px; }
+    .item-picker { display: flex; align-items: center; justify-content: space-between; min-height: 50px; border: none; border-radius: var(--radius-sm); background: var(--input-2); padding: 12px 14px; color: var(--fg); font-family: var(--font-body); font-size: 14px; text-align: left; cursor: pointer; }
+    .item-picker strong { color: var(--accent); font-size: 13px; }
+    .item-input { width: 100%; min-height: 50px; border: none; border-radius: var(--radius-sm); background: var(--input-2); padding: 12px 14px; color: var(--fg); font-family: var(--font-body); font-size: 14px; outline: none; }
+    .place-search { position: sticky; top: 0; z-index: 2; }
+    .place-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow-y: auto; }
+    .place-tile { min-height: 105px; padding: 12px; border: none; border-radius: var(--radius-sm); background: var(--input-2); color: var(--fg); text-align: left; cursor: pointer; }
+    .place-tile-emoji { display: block; font-size: 22px; margin-bottom: 13px; }
+    .place-tile-name { display: block; font-size: 13px; font-weight: 700; line-height: 17px; }
+    .place-tile-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .participant-list { display: flex; flex-direction: column; gap: 4px; }
+    .participant-check { display: flex; align-items: center; gap: 11px; padding: 11px 4px; color: var(--fg); font-size: 14px; cursor: pointer; }
+    .participant-check + .participant-check { border-top: 1px solid var(--border); }
+    .participant-check input { appearance: none; width: 22px; height: 22px; border: 1px solid var(--muted-2); border-radius: 7px; background: transparent; display: grid; place-content: center; }
+    .participant-check input:checked { background: var(--accent); border-color: var(--accent); }
+    .participant-check input:checked::after { content: '✓'; color: var(--fg-inverse); font-weight: 800; font-size: 14px; }
+    .draft-list-title { font-family: var(--font-display); font-size: 25px; color: var(--fg); }
+    .draft-card { padding: 16px; background: var(--card); border: none; border-radius: var(--radius-md); color: var(--fg); text-align: left; cursor: pointer; }
+    .draft-card-top { display: flex; align-items: center; justify-content: space-between; }
+    .draft-card-status { color: var(--accent); font-size: 12px; font-weight: 700; }
+    .draft-card h2 { margin-top: 8px; font-size: 18px; }
+    .draft-card p { margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .detail-card { padding: 16px; border-radius: var(--radius-md); background: var(--card); }
+    .detail-card-title { display: flex; align-items: center; justify-content: space-between; color: var(--fg); font-size: 17px; font-weight: 700; }
+    .detail-edit { width: 32px; height: 32px; border: none; border-radius: var(--radius-pill); background: var(--input-2); color: var(--accent); cursor: pointer; font-size: 16px; }
+    .detail-card-body { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 19px; }
+    .timeline { margin-top: 14px; display: flex; flex-direction: column; }
+    .timeline-item { position: relative; display: flex; gap: 12px; padding: 0 0 18px; border: none; background: transparent; color: var(--fg); text-align: left; cursor: pointer; }
+    .timeline-item::before { content: ''; position: absolute; left: 6px; top: 16px; bottom: -1px; width: 1px; background: var(--muted-2); }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-dot { width: 13px; height: 13px; margin-top: 2px; border: 3px solid var(--accent); border-radius: var(--radius-pill); background: var(--card); flex-shrink: 0; }
+    .timeline-copy strong { display: block; color: var(--fg); font-size: 14px; }
+    .timeline-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .people-list { display: flex; flex-direction: column; background: var(--card); border-radius: var(--radius-md); overflow: hidden; }
+    .person-row { display: flex; align-items: center; gap: 11px; padding: 13px 14px; }
+    .person-row + .person-row { border-top: 1px solid var(--border); }
+    .person-copy { flex: 1; min-width: 0; }
+    .person-name { color: var(--fg); font-size: 14px; font-weight: 700; }
+    .person-status { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .person-remove { width: 30px; height: 30px; border: none; border-radius: var(--radius-pill); background: var(--input-2); color: var(--muted); font-size: 20px; cursor: pointer; }
+    .add-person-button { width: 100%; min-height: 50px; border: 1px dashed var(--muted-2); border-radius: var(--radius-sm); background: transparent; color: var(--accent); font-family: var(--font-body); font-weight: 700; cursor: pointer; }
+    .user-result { display: flex; align-items: center; gap: 11px; padding: 12px 0; }
+    .user-result + .user-result { border-top: 1px solid var(--border); }
+    .user-result button { margin-left: auto; border: none; border-radius: var(--radius-pill); background: var(--accent); color: var(--fg-inverse); padding: 8px 12px; font-family: var(--font-body); font-size: 12px; font-weight: 700; cursor: pointer; }
+
+    /* ===== Bottom-sheet modal ===== */
+    .sheet-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 200;
+    }
+    .sheet-overlay.visible { display: flex; align-items: flex-end; }
+    .sheet-content {
+      background: var(--input);
+      border-radius: 20px 20px 0 0;
+      padding: 24px;
+      padding-bottom: 48px;
+      width: 100%;
+      max-height: 50%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: sheet-up 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--fg);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .sheet-item {
+      padding: 14px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 16px;
+      color: var(--fg);
+      border: none;
+      background: none;
+      text-align: left;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    .sheet-item:active { background: #3a3a3c; }
+    .sheet-item.active { background: var(--accent); color: var(--fg-inverse); font-weight: 600; }
+
+    /* ===================================================================
+       SCREEN SPECS LABEL (outside phone)
+       =================================================================== */
+    .screen-spec {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .screen-spec .title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--accent);
+    }
+    .screen-spec .desc {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .screen-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .nav-btn {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      min-width: 90px;
+    }
+    .nav-btn:hover { color: var(--fg); border-color: var(--accent); }
+    .nav-btn.active { color: var(--accent); border-color: var(--accent); }
+
+    /* ===================================================================
+       RESPONSIVE
+       =================================================================== */
+    @media (max-width: 480px) {
+      body { background: #000; }
+      .phone-outer {
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      .phone-outer::before,
+      .phone-outer::after { display: none; }
+      .phone-screen { border-radius: 0; }
+      .dynamic-island { display: none; }
+      .screen-spec, .screen-nav { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Screen label for desktop preview -->
+  <div class="screen-spec">
+    <div class="title">wanderlog.</div>
+    <div class="desc">Frontend prototype · tap the phone to interact</div>
+  </div>
+
+  <!-- Quick nav for desktop preview -->
+  <div class="screen-nav">
+    <button class="nav-btn active" data-nav="welcome">Welcome</button>
+    <button class="nav-btn" data-nav="login">Login</button>
+    <button class="nav-btn" data-nav="signup">Sign up</button>
+    <button class="nav-btn" data-nav="home">Home</button>
+    <button class="nav-btn" data-nav="plans">Plans</button>
+    <button class="nav-btn" data-nav="invite-details">Invite Detail</button>
+    <button class="nav-btn" data-nav="balances">Balances</button>
+    <button class="nav-btn" data-nav="drafts">Drafts</button>
+    <button class="nav-btn" data-nav="draft-detail">Draft Detail</button>
+    <button class="nav-btn" data-nav="plan-item">Plan Item</button>
+    <button class="nav-btn" data-nav="people">People</button>
+    <button class="nav-btn" data-nav="create-plan">Create Plan</button>
+  </div>
+
+  <!-- ============ PHONE MOCKUP ============ -->
+  <div class="phone-outer">
+    <div class="phone-screen">
+      <div class="dynamic-island"></div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="time" id="status-time">9:41</div>
+        <div class="icons">
+          <!-- signal -->
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor">
+            <rect x="0"  y="7" width="3" height="4" rx="1"/>
+            <rect x="4"  y="5" width="3" height="6" rx="1"/>
+            <rect x="8"  y="3" width="3" height="8" rx="1"/>
+            <rect x="12" y="1" width="3" height="10" rx="1"/>
+          </svg>
+          <!-- wifi -->
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 2.5c2.1 0 4 .8 5.5 2.1l-1.3 1.5C10.9 5 9.5 4.5 8 4.5s-2.9.5-4.2 1.6L2.5 4.6C4 3.3 5.9 2.5 8 2.5zm0 3c1.3 0 2.5.5 3.4 1.3l-1.4 1.6C9.2 7.8 8.6 7.5 8 7.5s-1.2.3-2 .9L4.6 6.8C5.5 6 6.7 5.5 8 5.5zm0 3c.6 0 1.1.2 1.5.6L8 10.5l-1.5-1.4c.4-.4.9-.6 1.5-.6z"/>
+          </svg>
+          <!-- battery -->
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none">
+            <rect x="0.5" y="0.5" width="22" height="12" rx="3" stroke="currentColor" opacity="0.4"/>
+            <rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/>
+            <rect x="24" y="4" width="2" height="5" rx="1" fill="currentColor" opacity="0.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: WELCOME ============ -->
+      <div class="screen active" id="screen-welcome">
+        <!-- Header with decorative circles -->
+        <div class="auth-header" style="padding-top: 60px; padding-bottom: 0; height: 380px;">
+          <!-- Decorative circles -->
+          <div class="deco-circle" style="width: 140px; height: 140px; background: var(--accent); opacity: 0.85; top: 20px; left: -30px;"></div>
+          <div class="deco-circle" style="width: 200px; height: 200px; background: var(--accent-2); opacity: 0.7; top: -40px; right: -60px;"></div>
+          <div class="deco-circle" style="width: 60px; height: 60px; background: var(--accent); opacity: 0.5; top: 160px; right: 40px;"></div>
+          <div class="deco-circle" style="width: 30px; height: 30px; background: var(--accent); opacity: 0.9; top: 120px; left: 160px;"></div>
+
+          <!-- Brand -->
+          <div class="brand" style="text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%;">
+            <div class="logo-text">wanderlog.</div>
+            <div class="tagline">log · explore · revisit</div>
+          </div>
+        </div>
+
+        <!-- Overlapping card -->
+        <div class="auth-card" style="margin-top: -40px;">
+          <!-- Icon -->
+          <div class="welcome-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f4a261" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5" fill="#f4a261" stroke="none"/>
+            </svg>
+          </div>
+
+          <!-- Body text -->
+          <p class="welcome-body">
+            Log every visit, explore your movement patterns, and revisit memories on a map — all in one place.
+          </p>
+
+          <!-- Pagination dots -->
+          <div class="pagination-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+
+          <!-- Buttons -->
+          <button class="btn-primary" onclick="showScreen('signup')">
+            SIGN UP
+          </button>
+          <button class="btn-outline" onclick="showScreen('login')">
+            LOGIN
+          </button>
+
+          <!-- Footer link -->
+          <div class="welcome-footer">
+            <button class="link" onclick="showScreen('home')">
+              Skip for now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: LOGIN ============ -->
+      <div class="screen" id="screen-login">
+        <!-- Header with wavy accent lines -->
+        <div class="auth-header" style="padding-top: 50px; padding-bottom: 30px; height: 200px;">
+          <!-- Thin wavy lines -->
+          <svg class="wave-divider" viewBox="0 0 390 40" preserveAspectRatio="none" style="bottom: -2px;">
+            <path d="M0,20 Q50,5 100,20 T200,20 T300,20 T390,20" stroke="#f4a261" stroke-width="1.5" fill="none" opacity="0.6"/>
+            <path d="M0,28 Q50,13 100,28 T200,28 T300,28 T390,28" stroke="#e76f51" stroke-width="1" fill="none" opacity="0.4"/>
+          </svg>
+          <!-- Small decorative circle -->
+          <div class="deco-circle" style="width: 80px; height: 80px; background: var(--accent); opacity: 0.12; top: 20px; right: -20px;"></div>
+
+          <!-- Brand -->
+          <div class="brand">
+            <div class="logo-text">wanderlog.</div>
+            <div class="tagline">log · explore · revisit</div>
+          </div>
+        </div>
+
+        <!-- Overlapping card -->
+        <div class="auth-card" style="margin-top: -30px;">
+          <!-- Back button -->
+          <button class="card-back" onclick="showScreen('welcome')">&#8249;</button>
+
+          <!-- Title -->
+          <div class="card-title" style="text-align: center;">Login</div>
+
+          <!-- Inputs -->
+          <div class="input-group">
+            <input
+              class="input"
+              type="email"
+              placeholder="Email"
+              autocomplete="email"
+              id="login-email"
+            />
+            <input
+              class="input"
+              type="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              id="login-password"
+            />
+          </div>
+
+          <!-- Primary button -->
+          <button class="btn-primary" id="login-btn" onclick="handleLogin()">
+            SIGN IN
+          </button>
+
+          <!-- Footer links -->
+          <div class="card-footer">
+            <button class="link forgot" onclick="alert('Password reset flow — coming soon')">
+              Forgot Password?
+            </button>
+            <button class="link" onclick="showScreen('signup')">
+              Don't have an account? <strong>Sign up</strong>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: SIGNUP ============ -->
+      <div class="screen" id="screen-signup">
+        <!-- Header with wavy accent lines -->
+        <div class="auth-header" style="padding-top: 50px; padding-bottom: 30px; height: 200px;">
+          <!-- Thin wavy lines -->
+          <svg class="wave-divider" viewBox="0 0 390 40" preserveAspectRatio="none" style="bottom: -2px;">
+            <path d="M0,20 Q50,5 100,20 T200,20 T300,20 T390,20" stroke="#f4a261" stroke-width="1.5" fill="none" opacity="0.6"/>
+            <path d="M0,28 Q50,13 100,28 T200,28 T300,28 T390,28" stroke="#e76f51" stroke-width="1" fill="none" opacity="0.4"/>
+          </svg>
+          <!-- Small decorative circle -->
+          <div class="deco-circle" style="width: 80px; height: 80px; background: var(--accent-2); opacity: 0.12; top: 20px; left: -20px;"></div>
+
+          <!-- Brand -->
+          <div class="brand">
+            <div class="logo-text">wanderlog.</div>
+            <div class="tagline">log · explore · revisit</div>
+          </div>
+        </div>
+
+        <!-- Overlapping card -->
+        <div class="auth-card" style="margin-top: -30px;">
+          <!-- Back button -->
+          <button class="card-back" onclick="showScreen('welcome')">&#8249;</button>
+
+          <!-- Title -->
+          <div class="card-title" style="text-align: center;">Sign up</div>
+
+          <!-- Inputs -->
+          <div class="input-group">
+            <input
+              class="input"
+              type="email"
+              placeholder="Email"
+              autocomplete="email"
+            />
+            <input
+              class="input"
+              type="text"
+              placeholder="Username"
+              autocomplete="username"
+            />
+            <input
+              class="input"
+              type="text"
+              placeholder="Display name"
+              autocomplete="name"
+            />
+            <input
+              class="input"
+              type="password"
+              placeholder="Password"
+              autocomplete="new-password"
+            />
+            <input
+              class="input"
+              type="password"
+              placeholder="Confirm Password"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <!-- Primary button -->
+          <button class="btn-primary" onclick="showScreen('home')">
+            CREATE ACCOUNT
+          </button>
+
+          <!-- Footer link -->
+          <div class="card-footer">
+            <button class="link" onclick="showScreen('login')">
+              Already have an account? <strong>Sign in</strong>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: HOME ============ -->
+      <div class="screen" id="screen-home">
+        <div class="home-scroll">
+          <!-- Header row: greeting + plus button -->
+          <div class="home-header-row">
+            <div class="home-welcome">
+              <div class="home-greeting">Good Morning,<br><span class="name">Explorer</span></div>
+              <div class="home-subtitle">Your travel dashboard</div>
+            </div>
+          </div>
+
+          <!-- Search bar -->
+          <div class="home-search">
+            <input type="text" placeholder="Where are you going?" />
+            <button class="home-search-btn" onclick="alert('Search — coming soon!')">
+              <span>⌕</span>
+            </button>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="section-header">
+            <div class="title">Quick Stats</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="emoji">📍</div>
+              <div class="value">6</div>
+              <div class="label">Places Visited</div>
+            </div>
+            <div class="stat-card">
+              <div class="emoji">🏙️</div>
+              <div class="value">2</div>
+              <div class="label">Cities</div>
+            </div>
+            <div class="stat-card">
+              <div class="emoji">🌍</div>
+              <div class="value">1</div>
+              <div class="label">Countries</div>
+            </div>
+            <div class="stat-card">
+              <div class="emoji">📅</div>
+              <div class="value">2</div>
+              <div class="label">This Month</div>
+            </div>
+          </div>
+
+          <!-- Recent Visits -->
+          <div class="section-header">
+            <div class="title">Recent Visits</div>
+            <div class="action">See all</div>
+          </div>
+          <div class="visit-list">
+            <!-- Visit 1: Cafe Tesu -->
+            <div class="visit-card">
+              <div class="visit-icon"><div class="emoji">☕</div></div>
+              <div class="visit-content">
+                <div class="visit-name">Cafe Tesu</div>
+                <div class="visit-category">Café</div>
+                <div class="visit-meta">Today · 9:30 AM · 1h 30m</div>
+                <div class="visit-location">New Delhi, India</div>
+              </div>
+            </div>
+            <!-- Visit 2: India Gate -->
+            <div class="visit-card">
+              <div class="visit-icon"><div class="emoji">🌳</div></div>
+              <div class="visit-content">
+                <div class="visit-name">India Gate</div>
+                <div class="visit-category">Park</div>
+                <div class="visit-meta">Yesterday · 5:00 PM · 1h 15m</div>
+                <div class="visit-location">New Delhi, India</div>
+              </div>
+            </div>
+            <!-- Visit 3: Select Citywalk -->
+            <div class="visit-card">
+              <div class="visit-icon"><div class="emoji">🛍️</div></div>
+              <div class="visit-content">
+                <div class="visit-name">Select Citywalk</div>
+                <div class="visit-category">Shopping</div>
+                <div class="visit-meta">Jul 8 · 2:00 PM · 3h 30m</div>
+                <div class="visit-location">New Delhi, India</div>
+              </div>
+            </div>
+            <!-- Visit 4: Blue Tokai Coffee -->
+            <div class="visit-card">
+              <div class="visit-icon"><div class="emoji">☕</div></div>
+              <div class="visit-content">
+                <div class="visit-name">Blue Tokai Coffee</div>
+                <div class="visit-category">Café</div>
+                <div class="visit-meta">Jul 6 · 10:00 AM · 1h 20m</div>
+                <div class="visit-location">New Delhi, India</div>
+              </div>
+            </div>
+            <!-- Visit 5: Cyber Hub -->
+            <div class="visit-card">
+              <div class="visit-icon"><div class="emoji">🍴</div></div>
+              <div class="visit-content">
+                <div class="visit-name">Cyber Hub</div>
+                <div class="visit-category">Restaurant</div>
+                <div class="visit-meta">Jul 3 · 7:30 PM · 2h 30m</div>
+                <div class="visit-location">Gurugram, India</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explore Insights -->
+          <div class="section-header">
+            <div class="title">Explore Insights</div>
+          </div>
+          <div class="insights-scroll">
+            <div class="insight-card">
+              <div class="emoji">☕</div>
+              <div class="card-label">Most Visited Café</div>
+              <div class="card-value">Blue Tokai Coffee</div>
+              <div class="card-subtitle">2 visits</div>
+            </div>
+            <div class="insight-card">
+              <div class="emoji">⏱️</div>
+              <div class="card-label">Longest Stay</div>
+              <div class="card-value">Select Citywalk</div>
+              <div class="card-subtitle">3h 30m</div>
+            </div>
+            <div class="insight-card">
+              <div class="emoji">✨</div>
+              <div class="card-label">New This Week</div>
+              <div class="card-value">Cafe Tesu</div>
+              <div class="card-subtitle">Today · 9:30 AM</div>
+            </div>
+            <div class="insight-card">
+              <div class="emoji">📍</div>
+              <div class="card-label">Favorite Area</div>
+              <div class="card-value">New Delhi</div>
+              <div class="card-subtitle">5 visits</div>
+            </div>
+          </div>
+
+          <!-- Demo hint -->
+          <div class="demo-hint">Showing sample data until you log your first visit</div>
+        </div>
+
+        <!-- Bottom tab bar -->
+        <div class="tab-bar">
+          <button class="tab-item active" data-tab="home" onclick="showScreen('home')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7v11h-6v-7h-6v7H3V10z"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="tab-item" data-tab="plans" onclick="showScreen('plans')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="17" rx="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+            </svg>
+            <span>Plans</span>
+          </button>
+          <button class="tab-item" data-tab="explore" onclick="alert('Explore screen — coming soon!')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+            <span>Explore</span>
+          </button>
+          <button class="tab-item" data-tab="profile" onclick="alert('Profile screen — coming soon!')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <span>Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: PLANS ============ -->
+      <div class="screen" id="screen-plans">
+        <!-- Title row -->
+        <div class="plans-title-row">
+          <div class="plans-title">Plans</div>
+          <div class="plans-actions">
+            <button class="plans-icon-btn" onclick="alert('Search plans — coming soon!')" aria-label="Search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/>
+                <line x1="16.5" y1="16.5" x2="21" y2="21"/>
+              </svg>
+            </button>
+            <button class="plans-icon-btn" onclick="showScreen('create-plan')" aria-label="Add plan">
+              <span>+</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Segmented slider tabs -->
+        <div class="plans-slider-tabs" id="slider-tabs">
+          <div class="plans-slider-indicator" id="slider-indicator"></div>
+          <button class="plans-slider-tab active" data-pane="0">Overview</button>
+          <button class="plans-slider-tab" data-pane="1">Invites</button>
+          <button class="plans-slider-tab" data-pane="2">Calendar</button>
+          <button class="plans-slider-tab" data-pane="3">Past</button>
+        </div>
+
+        <!-- Swipeable panes -->
+        <div class="plans-slider-content" id="slider-content">
+          <!-- Pane 0: Plans -->
+          <div class="plans-slider-pane">
+            <div class="plans-overview-heading">
+              <h2>July at a glance</h2>
+              <span>Monthly view</span>
+            </div>
+
+            <div class="monthly-stats-grid">
+              <div class="monthly-stat-card"><div class="monthly-stat-icon">✓</div><div><div class="monthly-stat-value">12</div><div class="monthly-stat-label">Attended</div></div></div>
+              <div class="monthly-stat-card"><div class="monthly-stat-icon">✦</div><div><div class="monthly-stat-value">4</div><div class="monthly-stat-label">Hosted</div></div></div>
+              <div class="monthly-stat-card"><div class="monthly-stat-icon">₹</div><div><div class="monthly-stat-value">8.6k</div><div class="monthly-stat-label">Spent</div></div></div>
+              <div class="monthly-stat-card"><div class="monthly-stat-icon">📍</div><div><div class="monthly-stat-value">7</div><div class="monthly-stat-label">New places</div></div></div>
+            </div>
+
+            <div class="plan-cost-card">
+              <div class="plan-cost-card-header">
+                <div><div class="plan-cost-card-title">Plans vs. cost</div><div class="plan-cost-card-subtitle">Your last six months</div></div>
+                <div class="chart-legend" aria-label="Chart legend"><span><i class="chart-dot"></i>Plans</span><span><i class="chart-dot cost"></i>Cost</span></div>
+              </div>
+              <svg class="plan-cost-chart" viewBox="0 0 330 126" role="img" aria-label="Monthly plan count and spending chart">
+                <path d="M0 106H330 M0 65H330 M0 24H330" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>
+                <path d="M10 92 L70 74 L130 82 L190 48 L250 61 L315 29" fill="none" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 103 L70 88 L130 93 L190 70 L250 78 L315 43" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <g fill="var(--fg)"><circle cx="10" cy="92" r="3"/><circle cx="70" cy="74" r="3"/><circle cx="130" cy="82" r="3"/><circle cx="190" cy="48" r="3"/><circle cx="250" cy="61" r="3"/><circle cx="315" cy="29" r="3"/></g>
+                <g fill="var(--accent)"><circle cx="10" cy="103" r="3"/><circle cx="70" cy="88" r="3"/><circle cx="130" cy="93" r="3"/><circle cx="190" cy="70" r="3"/><circle cx="250" cy="78" r="3"/><circle cx="315" cy="43" r="3"/></g>
+                <g fill="var(--muted)" font-family="var(--font-body)" font-size="10" text-anchor="middle"><text x="10" y="122">Feb</text><text x="70" y="122">Mar</text><text x="130" y="122">Apr</text><text x="190" y="122">May</text><text x="250" y="122">Jun</text><text x="315" y="122">Jul</text></g>
+              </svg>
+            </div>
+
+            <div class="plans-overview-heading"><h2>Get back to it</h2><span>2 drafts</span></div>
+            <button class="drafts-card" onclick="showScreen('drafts')" aria-label="Continue your two plan drafts">
+              <div class="drafts-icon">✎</div>
+              <div class="drafts-copy"><div class="drafts-title">Finish planning your drafts</div><div class="drafts-body">Sunday brunch and a weekend getaway are waiting for details.</div></div>
+              <div class="drafts-arrow" aria-hidden="true">›</div>
+            </button>
+
+            <div class="plans-overview-heading"><h2>Money</h2><span>3 pending</span></div>
+            <button class="settle-up-card" onclick="showScreen('balances')" aria-label="Review balances and settle up">
+              <div class="settle-up-icon">₹</div>
+              <div class="settle-up-copy"><div class="settle-up-title">Settle up</div><div class="settle-up-body">You owe ₹1,250 across 3 plans.</div></div>
+              <div class="drafts-arrow" aria-hidden="true">›</div>
+            </button>
+          </div>
+
+          <!-- Pane 1: Invites -->
+          <div class="plans-slider-pane">
+            <div class="date-group-heading">Pending invites</div>
+            <div class="plan-card" onclick="openInviteDetails()" role="button" tabindex="0">
+              <div class="plan-emoji">🍻</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Drinks at Cyber Hub</div>
+                <div class="plan-meta">Tonight · 9:00 PM · from Aman</div>
+                <div class="plan-people">RSVP needed</div>
+              </div>
+            </div>
+            <div class="plan-card" onclick="openInviteDetails()" role="button" tabindex="0">
+              <div class="plan-emoji">🌮</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Taco Tuesday</div>
+                <div class="plan-meta">Tue · 8:00 PM · from Riya</div>
+                <div class="plan-people">RSVP needed</div>
+              </div>
+            </div>
+            <div class="plan-card" onclick="openInviteDetails()" role="button" tabindex="0">
+              <div class="plan-emoji">🎵</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Live music at Depot 48</div>
+                <div class="plan-meta">Fri · 9:30 PM · from Kabir</div>
+                <div class="plan-people">RSVP needed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 2: Calendar -->
+          <div class="plans-slider-pane">
+            <div class="pane-empty">
+              <div class="emoji">📅</div>
+              <div class="title">Calendar view</div>
+              <div class="body">A monthly calendar of your upcoming plans will appear here.</div>
+            </div>
+          </div>
+
+          <!-- Pane 3: Archive -->
+          <div class="plans-slider-pane">
+            <div class="date-group-heading">Completed</div>
+            <div class="plan-card">
+              <div class="plan-emoji">🍜</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Ramen at Mamagoto</div>
+                <div class="plan-meta">Jul 5 · Khan Market</div>
+                <div class="plan-people">Settled · ₹780</div>
+              </div>
+            </div>
+            <div class="plan-card">
+              <div class="plan-emoji">🎳</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Bowling Night</div>
+                <div class="plan-meta">Jun 28 · Ambience Mall</div>
+                <div class="plan-people">4 attended · ₹300 pending</div>
+              </div>
+            </div>
+
+            <div class="date-group-heading">Cancelled</div>
+            <div class="plan-card">
+              <div class="plan-emoji">🎨</div>
+              <div class="plan-card-body">
+                <div class="plan-title">Pottery workshop</div>
+                <div class="plan-meta">Jun 16 · Shahpur Jat</div>
+                <div class="plan-people">Cancelled by host</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom tab bar (Plans active) -->
+        <div class="tab-bar">
+          <button class="tab-item" data-tab="home" onclick="showScreen('home')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 7v11h-6v-7h-6v7H3V10z"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="tab-item active" data-tab="plans" onclick="showScreen('plans')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4h14v3H5zm0 5h14v11H5zm3 3v2h8v-2z"/></svg>
+            <span>Plans</span>
+          </button>
+          <button class="tab-item" data-tab="explore" onclick="alert('Explore screen — coming soon!')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+            <span>Explore</span>
+          </button>
+          <button class="tab-item" data-tab="profile" onclick="alert('Profile screen — coming soon!')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <span>Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: INVITE DETAIL ============ -->
+      <div class="screen" id="screen-invite-details">
+        <div class="invite-detail-scroll">
+          <div class="invite-detail-header">
+            <button class="create-back" onclick="returnToInvites()" aria-label="Back to invites">&#8592;</button>
+            <h1>Invitation</h1>
+            <div class="invite-detail-header-spacer"></div>
+          </div>
+
+          <div class="invite-hero">
+            <div class="invite-kicker">You're invited</div>
+            <div class="invite-plan-name">Drinks at Cyber Hub</div>
+            <div class="invite-plan-meta">Tonight · 9:00 PM onwards<br>Social, Cyber Hub</div>
+            <div class="invite-organizer">
+              <div class="avatar">AK</div>
+              <div class="organizer-copy"><strong>Aman Kapoor</strong>invited you to this plan</div>
+            </div>
+          </div>
+
+          <div class="invite-section-title">In the plan</div>
+          <div class="invite-itinerary">
+            <div class="itinerary-row"><div class="itinerary-time">9:00 PM</div><div><div class="itinerary-name">Meet at Social</div><div class="itinerary-place">Cyber Hub, DLF Phase 2</div></div></div>
+            <div class="itinerary-row"><div class="itinerary-time">9:30 PM</div><div><div class="itinerary-name">Drinks and small plates</div><div class="itinerary-place">Table booked for the group</div></div></div>
+            <div class="itinerary-row"><div class="itinerary-time">11:00 PM</div><div><div class="itinerary-name">Decide the next stop</div><div class="itinerary-place">Optional, based on the group</div></div></div>
+          </div>
+
+          <div class="invite-summary-row">
+            <div class="invite-summary-card"><div class="invite-summary-label">Estimated cost</div><div class="invite-summary-value">₹1,200</div></div>
+            <div class="invite-summary-card"><div class="invite-summary-label">Your share</div><div class="invite-summary-value">₹600–800</div></div>
+          </div>
+
+          <div class="invite-section-title">Activity</div>
+          <div class="invite-activity">
+            <div class="invite-avatars"><div class="avatar">AK</div><div class="avatar">RS</div><div class="avatar">KV</div><div class="avatar">+2</div></div>
+            <div class="invite-activity-copy"><strong>4 are going</strong>2 haven’t replied</div>
+          </div>
+
+          <div class="invite-section-title">Money</div>
+          <div class="invite-activity">
+            <div class="settle-up-icon">₹</div>
+            <div class="balance-row-copy"><div class="balance-row-title">Your estimated share</div><div class="balance-row-body">Final split will be added after the plan.</div></div>
+            <div class="balance-row-amount">₹600–800</div>
+          </div>
+        </div>
+
+        <div class="rsvp-bar">
+          <button class="rsvp-btn rsvp-decline" onclick="handleInviteRsvp(false)">Sorry, can’t</button>
+          <button class="rsvp-btn rsvp-accept" onclick="handleInviteRsvp(true)">Yes, I’m in</button>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: BALANCES ============ -->
+      <div class="screen" id="screen-balances">
+        <div class="balances-scroll">
+          <div class="invite-detail-header">
+            <button class="create-back" onclick="showScreen('plans')" aria-label="Back to plans">&#8592;</button>
+            <h1>Balances</h1>
+            <div class="invite-detail-header-spacer"></div>
+          </div>
+
+          <div class="balances-total">
+            <div class="balances-total-label">You owe</div>
+            <div class="balances-total-value">₹1,250</div>
+            <div class="balances-total-body">Across 3 plans with friends</div>
+          </div>
+
+          <div class="balance-group">
+            <div class="balance-group-title">You owe</div>
+            <div class="balance-row"><div class="avatar">AK</div><div class="balance-row-copy"><div class="balance-row-title">Aman Kapoor</div><div class="balance-row-body">Drinks at Cyber Hub</div></div><div><div class="balance-row-amount">₹450</div><div class="balance-row-status">Pending</div></div></div>
+            <div class="balance-row"><div class="avatar">RS</div><div class="balance-row-copy"><div class="balance-row-title">Riya Sharma</div><div class="balance-row-body">Sunday brunch</div></div><div><div class="balance-row-amount">₹800</div><div class="balance-row-status">Pending</div></div></div>
+          </div>
+
+          <div class="balance-group">
+            <div class="balance-group-title">Owed to you</div>
+            <div class="balance-row"><div class="avatar">KV</div><div class="balance-row-copy"><div class="balance-row-title">Kabir Verma</div><div class="balance-row-body">Bowling Night</div></div><div><div class="balance-row-amount">₹300</div><div class="balance-row-status">Pending</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: DRAFTS ============ -->
+      <div class="screen" id="screen-drafts">
+        <div class="invite-detail-scroll">
+          <div class="invite-detail-header">
+            <button class="create-back" onclick="showScreen('plans')" aria-label="Back to overview">&#8592;</button>
+            <h1>Drafts</h1>
+            <div class="invite-detail-header-spacer"></div>
+          </div>
+          <div class="draft-list-title">Pick up where you left off</div>
+          <button class="draft-card" onclick="showScreen('draft-detail')"><div class="draft-card-top"><span class="draft-card-status">2 of 4 details added</span><span class="drafts-arrow">›</span></div><h2>Sunday brunch</h2><p>Sunday · Cafe Tesu · 3 invited</p></button>
+          <button class="draft-card" onclick="showScreen('draft-detail')"><div class="draft-card-top"><span class="draft-card-status">1 of 4 details added</span><span class="drafts-arrow">›</span></div><h2>Weekend getaway</h2><p>Dates and people still to be confirmed</p></button>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: DRAFT DETAIL ============ -->
+      <div class="screen" id="screen-draft-detail">
+        <div class="invite-detail-scroll">
+          <div class="invite-detail-header">
+            <button class="create-back" onclick="showScreen('drafts')" aria-label="Back to drafts">&#8592;</button>
+            <h1>Sunday brunch</h1>
+            <div class="invite-detail-header-spacer"></div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-title">Overview <button class="detail-edit" onclick="showScreen('create-plan')" aria-label="Edit plan">✎</button></div>
+            <div class="detail-card-body">Sunday, 19 July · 11:00 AM<br>Cafe Tesu, Vasant Kunj · Estimated ₹2,400</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-title">Timeline <button class="detail-edit" onclick="openPlanItemScreen('draft-detail')" aria-label="Add plan item">+</button></div>
+            <div class="timeline">
+              <button class="timeline-item" onclick="editPlanItem('Cafe Tesu')"><i class="timeline-dot"></i><span class="timeline-copy"><strong>Meet at Cafe Tesu</strong><span>11:00 AM · 3 participants</span></span></button>
+              <button class="timeline-item" onclick="editPlanItem('Social')"><i class="timeline-dot"></i><span class="timeline-copy"><strong>Brunch and coffee</strong><span>11:15 AM · estimated ₹800 each</span></span></button>
+            </div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-title">People <button class="detail-edit" onclick="showScreen('people')" aria-label="Edit people">+</button></div>
+            <div class="detail-card-body">Aman, Riya and you are invited. Add or remove people while this plan is still a draft.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: PLAN ITEM ============ -->
+      <div class="screen" id="screen-plan-item">
+        <div class="create-scroll">
+          <div class="create-header"><button class="create-back" onclick="returnFromPlanItem()" aria-label="Back">&#8592;</button><div class="create-title">Plan item</div><div class="create-header-spacer"></div></div>
+          <div class="create-form">
+            <div class="item-field"><label>Place</label><button class="item-picker" onclick="openPlaceSheet()"><span id="item-place-label">Choose a place</span><strong>Browse</strong></button></div>
+            <div class="item-field"><label>Participants</label><button class="item-picker" onclick="openParticipantsSheet()"><span id="item-participants-label">Choose from plan participants</span><strong>Select</strong></button></div>
+            <div class="item-field"><label>Time</label><input class="item-input" value="11:00 AM" aria-label="Time" /></div>
+            <div class="item-field"><label>Estimated cost</label><input class="item-input" value="₹2,400 total" aria-label="Estimated cost" /></div>
+            <button class="create-submit" onclick="savePlanItem()">Save item</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: PEOPLE ============ -->
+      <div class="screen" id="screen-people">
+        <div class="invite-detail-scroll">
+          <div class="invite-detail-header"><button class="create-back" onclick="showScreen('draft-detail')" aria-label="Back to plan">&#8592;</button><h1>People</h1><div class="invite-detail-header-spacer"></div></div>
+          <div class="create-label">Everyone invited to Sunday brunch</div>
+          <div class="people-list" id="people-list">
+            <div class="person-row" id="person-aman"><div class="avatar">AK</div><div class="person-copy"><div class="person-name">Aman Kapoor</div><div class="person-status">Invited</div></div><button class="person-remove" onclick="removePerson('person-aman')" aria-label="Remove Aman">×</button></div>
+            <div class="person-row" id="person-riya"><div class="avatar">RS</div><div class="person-copy"><div class="person-name">Riya Sharma</div><div class="person-status">Invited</div></div><button class="person-remove" onclick="removePerson('person-riya')" aria-label="Remove Riya">×</button></div>
+            <div class="person-row" id="person-you"><div class="avatar">You</div><div class="person-copy"><div class="person-name">You</div><div class="person-status">Host</div></div></div>
+            <div class="person-row" id="person-neha" hidden><div class="avatar">NG</div><div class="person-copy"><div class="person-name">Neha Gupta</div><div class="person-status">Invited</div></div><button class="person-remove" onclick="removePerson('person-neha')" aria-label="Remove Neha">×</button></div>
+            <div class="person-row" id="person-dev" hidden><div class="avatar">DM</div><div class="person-copy"><div class="person-name">Dev Malhotra</div><div class="person-status">Invited</div></div><button class="person-remove" onclick="removePerson('person-dev')" aria-label="Remove Dev">×</button></div>
+          </div>
+          <button class="add-person-button" onclick="openUserSheet()">+ Add people</button>
+        </div>
+      </div>
+
+      <!-- ============ SCREEN: CREATE PLAN ============ -->
+      <div class="screen" id="screen-create-plan">
+        <div class="create-scroll">
+          <!-- Header -->
+          <div class="create-header">
+            <button class="create-back" onclick="showScreen('plans')">&#8592;</button>
+            <div class="create-title">Create Plan</div>
+            <div class="create-header-spacer"></div>
+          </div>
+
+          <!-- Form -->
+          <div class="create-form">
+            <input
+              class="create-input"
+              type="text"
+              placeholder="Title"
+              id="cp-title"
+            />
+
+            <textarea
+              class="create-input create-textarea"
+              placeholder="Description"
+              id="cp-description"
+            ></textarea>
+
+            <!-- Visibility toggle -->
+            <div class="create-field">
+              <div class="create-label">Visibility</div>
+              <div class="create-toggle-row">
+                <div class="create-toggle-label" id="cp-visibility-label">Private</div>
+                <button class="create-switch" id="cp-visibility-switch" onclick="toggleVisibility()">
+                  <div class="create-switch-knob"></div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Status picker -->
+            <div class="create-field">
+              <div class="create-label">Status</div>
+              <button class="create-picker-btn" onclick="openStatusSheet()">
+                <span class="create-picker-btn-text" id="cp-status-label">Pending</span>
+                <span class="create-picker-arrow">&#9660;</span>
+              </button>
+            </div>
+
+            <!-- Start date -->
+            <div class="create-field">
+              <div class="create-label">Start Date</div>
+              <button class="create-date-btn" onclick="alert('Date picker — coming soon!')">
+                <span class="create-date-btn-text" id="cp-start-date">2026-07-11</span>
+                <span class="create-date-btn-emoji">📅</span>
+              </button>
+            </div>
+
+            <!-- End date -->
+            <div class="create-field">
+              <div class="create-label">End Date</div>
+              <button class="create-date-btn" onclick="alert('Date picker — coming soon!')">
+                <span class="create-date-btn-text" id="cp-end-date">2026-07-11</span>
+                <span class="create-date-btn-emoji">📅</span>
+              </button>
+            </div>
+
+            <!-- Estimated cost -->
+            <input
+              class="create-input"
+              type="number"
+              placeholder="Estimated cost"
+              id="cp-cost"
+            />
+
+            <div class="create-field">
+              <div class="create-label">Plan items</div>
+              <button class="plan-items-button" onclick="openPlanItemScreen('create-plan')"><span>Add a place or activity</span><span>+</span></button>
+            </div>
+
+            <!-- Submit -->
+            <button class="create-submit" id="cp-submit" onclick="submitPlan()">
+              Create Plan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STATUS BOTTOM-SHEET (overlay) ============ -->
+      <div class="sheet-overlay" id="status-sheet" onclick="closeStatusSheet(event)">
+        <div class="sheet-content" onclick="event.stopPropagation()">
+          <div class="sheet-title">Select Status</div>
+          <button class="sheet-item active" data-status="pending" onclick="selectStatus('pending')">Pending</button>
+          <button class="sheet-item" data-status="active" onclick="selectStatus('active')">Active</button>
+          <button class="sheet-item" data-status="completed" onclick="selectStatus('completed')">Completed</button>
+          <button class="sheet-item" data-status="cancelled" onclick="selectStatus('cancelled')">Cancelled</button>
+        </div>
+      </div>
+
+      <!-- ============ PLAN ITEM BOTTOM-SHEETS ============ -->
+      <div class="sheet-overlay" id="place-sheet" onclick="closePlaceSheet(event)">
+        <div class="sheet-content item-sheet-content" onclick="event.stopPropagation()">
+          <div class="item-sheet-header"><h2>Choose a place</h2><button class="sheet-close" onclick="closePlaceSheet()" aria-label="Close">×</button></div>
+          <input class="item-input place-search" id="place-search" placeholder="Search places" oninput="filterPlaces()" aria-label="Search places" />
+          <div class="place-grid" id="place-grid">
+            <button class="place-tile" data-place="Cafe Tesu" onclick="choosePlace('Cafe Tesu')"><span class="place-tile-emoji">☕</span><span class="place-tile-name">Cafe Tesu</span><span class="place-tile-meta">Vasant Kunj</span></button>
+            <button class="place-tile" data-place="Blue Tokai" onclick="choosePlace('Blue Tokai')"><span class="place-tile-emoji">☕</span><span class="place-tile-name">Blue Tokai</span><span class="place-tile-meta">Cyber Hub</span></button>
+            <button class="place-tile" data-place="Social" onclick="choosePlace('Social')"><span class="place-tile-emoji">🍻</span><span class="place-tile-name">Social</span><span class="place-tile-meta">Cyber Hub</span></button>
+            <button class="place-tile" data-place="The Piano Man" onclick="choosePlace('The Piano Man')"><span class="place-tile-emoji">🎵</span><span class="place-tile-name">The Piano Man</span><span class="place-tile-meta">Safdarjung</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-overlay" id="participants-sheet" onclick="closeParticipantsSheet(event)">
+        <div class="sheet-content item-sheet-content" onclick="event.stopPropagation()">
+          <div class="item-sheet-header"><h2>Participants</h2><button class="sheet-close" onclick="closeParticipantsSheet()" aria-label="Close">×</button></div>
+          <div class="create-label">Only people invited to this plan can be added.</div>
+          <div class="participant-list">
+            <label class="participant-check"><input type="checkbox" checked onchange="updateParticipantLabel()" /><span>Aman Kapoor · invited</span></label>
+            <label class="participant-check"><input type="checkbox" checked onchange="updateParticipantLabel()" /><span>Riya Sharma · invited</span></label>
+            <label class="participant-check"><input type="checkbox" onchange="updateParticipantLabel()" /><span>Kabir Verma · invited</span></label>
+          </div>
+          <button class="create-submit" onclick="closeParticipantsSheet()">Done</button>
+        </div>
+      </div>
+
+      <div class="sheet-overlay" id="user-sheet" onclick="closeUserSheet(event)">
+        <div class="sheet-content item-sheet-content" onclick="event.stopPropagation()">
+          <div class="item-sheet-header"><h2>Add people</h2><button class="sheet-close" onclick="closeUserSheet()" aria-label="Close">×</button></div>
+          <input class="item-input" id="user-search" placeholder="Search by user name" oninput="filterUsers()" aria-label="Search users" />
+          <div id="user-results">
+            <div class="user-result" data-user="Neha Gupta"><div class="avatar">NG</div><div class="person-copy"><div class="person-name">Neha Gupta</div><div class="person-status">@neha.gu</div></div><button onclick="addPerson('person-neha')">Add</button></div>
+            <div class="user-result" data-user="Dev Malhotra"><div class="avatar">DM</div><div class="person-copy"><div class="person-name">Dev Malhotra</div><div class="person-status">@devm</div></div><button onclick="addPerson('person-dev')">Add</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Home indicator -->
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================================
+       SCREEN ROUTER
+       =================================================================== */
+    function showScreen(name) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+      const el = document.getElementById("screen-" + name);
+      if (el) el.classList.add("active");
+
+      document.querySelectorAll(".nav-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.nav === name);
+      });
+
+      // Clear any loading states
+      const loginBtn = document.getElementById("login-btn");
+      if (loginBtn && name !== "login") {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "SIGN IN";
+      }
+    }
+
+    function openInviteDetails() {
+      showScreen("invite-details");
+    }
+
+    function returnToInvites() {
+      plansPaneOnEntry = 1;
+      showScreen("plans");
+    }
+
+    function handleInviteRsvp(isGoing) {
+      alert(isGoing ? "You're in! Aman will be notified." : "No problem — Aman will be notified.");
+      returnToInvites();
+    }
+
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => showScreen(btn.dataset.nav));
+    });
+
+    /* ===================================================================
+       LOGIN HANDLER (mock)
+       =================================================================== */
+    function handleLogin() {
+      const btn = document.getElementById("login-btn");
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      if (!email || !password) {
+        alert("Missing fields\nPlease enter your email and password.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "SIGN IN";
+        showScreen("home");
+      }, 900);
+    }
+
+    /* ===================================================================
+       LIVE CLOCK (status bar)
+       =================================================================== */
+    function updateClock() {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes().toString().padStart(2, "0");
+      h = h.toString();
+      document.getElementById("status-time").textContent = h + ":" + m;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    /* Enter key on password triggers login */
+    document.getElementById("login-password").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    /* ===================================================================
+       PAGINATION DOTS (welcome screen — cycle on tap)
+       =================================================================== */
+    const dots = document.querySelectorAll(".pagination-dots .dot");
+    let dotIndex = 0;
+    setInterval(() => {
+      dots.forEach((d) => d.classList.remove("active"));
+      dotIndex = (dotIndex + 1) % dots.length;
+      dots[dotIndex].classList.add("active");
+    }, 2500);
+
+    /* ===================================================================
+       PLANS SLIDER (segmented tabs + swipeable panes)
+       =================================================================== */
+    const sliderTabs = document.querySelectorAll(".plans-slider-tab");
+    const sliderContent = document.getElementById("slider-content");
+    const sliderIndicator = document.getElementById("slider-indicator");
+    let plansPaneOnEntry = 0;
+
+    function updateSliderIndicator(index) {
+      const tab = sliderTabs[index];
+      if (!tab || !sliderIndicator || !sliderTabs.length) return;
+      sliderIndicator.style.left = tab.offsetLeft + "px";
+      sliderIndicator.style.width = tab.offsetWidth + "px";
+      sliderTabs.forEach((t, i) => t.classList.toggle("active", i === index));
+    }
+
+    sliderTabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => {
+        if (!sliderContent) return;
+        const paneWidth = sliderContent.offsetWidth;
+        sliderContent.scrollTo({ left: paneWidth * index, behavior: "smooth" });
+        updateSliderIndicator(index);
+      });
+    });
+
+    let sliderScrollRaf = 0;
+    sliderContent?.addEventListener("scroll", () => {
+      if (sliderScrollRaf) cancelAnimationFrame(sliderScrollRaf);
+      sliderScrollRaf = requestAnimationFrame(() => {
+        const paneWidth = sliderContent.offsetWidth || 1;
+        const index = Math.round(sliderContent.scrollLeft / paneWidth);
+        updateSliderIndicator(index);
+      });
+    });
+
+    // Re-position indicator whenever the plans screen becomes visible
+    const plansScreenEl = document.getElementById("screen-plans");
+    const plansObserver = new MutationObserver(() => {
+      if (plansScreenEl.classList.contains("active")) {
+        // Allow layout pass before measuring
+        const paneIndex = plansPaneOnEntry;
+        requestAnimationFrame(() => {
+          updateSliderIndicator(paneIndex);
+          if (sliderContent) sliderContent.scrollLeft = sliderContent.offsetWidth * paneIndex;
+          plansPaneOnEntry = 0;
+        });
+      }
+    });
+    plansObserver.observe(plansScreenEl, { attributes: true, attributeFilter: ["class"] });
+
+    // Position indicator on resize
+    window.addEventListener("resize", () => {
+      const activeTab = document.querySelector(".plans-slider-tab.active");
+      if (activeTab) updateSliderIndicator(Array.from(sliderTabs).indexOf(activeTab));
+    });
+
+    /* ===================================================================
+       CREATE PLAN — toggle, status sheet, submit
+       =================================================================== */
+    let cpVisibility = false; // false = private, true = public
+    let cpStatus = "pending";
+
+    const VIS_PRIVATE  = "Private";
+    const VIS_PUBLIC   = "Public";
+
+    function toggleVisibility() {
+      cpVisibility = !cpVisibility;
+      const sw    = document.getElementById("cp-visibility-switch");
+      const label = document.getElementById("cp-visibility-label");
+      if (!sw || !label) return;
+      sw.classList.toggle("on", cpVisibility);
+      label.textContent = cpVisibility ? VIS_PUBLIC : VIS_PRIVATE;
+    }
+
+    function openStatusSheet() {
+      document.getElementById("status-sheet").classList.add("visible");
+    }
+    function closeStatusSheet(ev) {
+      if (ev && ev.target.closest(".sheet-content")) return;
+      document.getElementById("status-sheet").classList.remove("visible");
+    }
+    function selectStatus(status) {
+      cpStatus = status;
+      document.getElementById("cp-status-label").textContent =
+        status.charAt(0).toUpperCase() + status.slice(1);
+      document.querySelectorAll(".sheet-item").forEach((item) => {
+        item.classList.toggle("active", item.dataset.status === status);
+      });
+      document.getElementById("status-sheet").classList.remove("visible");
+    }
+
+    let planItemReturnScreen = "create-plan";
+    function openPlanItemScreen(returnScreen) {
+      planItemReturnScreen = returnScreen;
+      document.getElementById("item-place-label").textContent = "Choose a place";
+      showScreen("plan-item");
+    }
+    function editPlanItem(place) {
+      document.getElementById("item-place-label").textContent = place;
+      planItemReturnScreen = "draft-detail";
+      showScreen("plan-item");
+    }
+    function returnFromPlanItem() {
+      showScreen(planItemReturnScreen);
+    }
+    function openPlaceSheet() {
+      document.getElementById("place-sheet").classList.add("visible");
+    }
+    function closePlaceSheet(ev) {
+      if (ev && ev.target.closest(".sheet-content")) return;
+      document.getElementById("place-sheet").classList.remove("visible");
+    }
+    function choosePlace(name) {
+      document.getElementById("item-place-label").textContent = name;
+      document.getElementById("place-sheet").classList.remove("visible");
+    }
+    function filterPlaces() {
+      const term = document.getElementById("place-search").value.toLowerCase();
+      document.querySelectorAll(".place-tile").forEach((place) => {
+        place.hidden = !place.dataset.place.toLowerCase().includes(term);
+      });
+    }
+    function openParticipantsSheet() {
+      document.getElementById("participants-sheet").classList.add("visible");
+    }
+    function closeParticipantsSheet(ev) {
+      if (ev && ev.target.closest(".sheet-content")) return;
+      document.getElementById("participants-sheet").classList.remove("visible");
+    }
+    function updateParticipantLabel() {
+      const count = document.querySelectorAll("#participants-sheet input:checked").length;
+      document.getElementById("item-participants-label").textContent = count ? `${count} participant${count === 1 ? "" : "s"} selected` : "Choose from plan participants";
+    }
+    function savePlanItem() {
+      const place = document.getElementById("item-place-label").textContent;
+      if (place === "Choose a place") {
+        alert("Choose a place before saving this item.");
+        return;
+      }
+      showScreen(planItemReturnScreen);
+      document.querySelector(".plan-items-button span").textContent = "1 plan item added";
+    }
+
+    function openUserSheet() {
+      document.getElementById("user-sheet").classList.add("visible");
+    }
+    function closeUserSheet(ev) {
+      if (ev && ev.target.closest(".sheet-content")) return;
+      document.getElementById("user-sheet").classList.remove("visible");
+    }
+    function filterUsers() {
+      const term = document.getElementById("user-search").value.toLowerCase();
+      document.querySelectorAll(".user-result").forEach((user) => {
+        user.hidden = !user.dataset.user.toLowerCase().includes(term);
+      });
+    }
+    function addPerson(id) {
+      document.getElementById(id).hidden = false;
+      document.getElementById("user-sheet").classList.remove("visible");
+    }
+    function removePerson(id) {
+      document.getElementById(id).hidden = true;
+    }
+
+    function submitPlan() {
+      const btn   = document.getElementById("cp-submit");
+      const title = (document.getElementById("cp-title").value || "").trim();
+      if (!title) {
+        alert("Missing title\nPlease enter a plan title.");
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Creating…";
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "Create Plan";
+        showScreen("plans");
+      }, 700);
+    }
+  </script>
+</body>
+</html>
